@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./backend-api
+      dockerfile: Dockerfile.dev
+    container_name: algo-drill-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend-api:/var/www/html
+      - ./backend-api/storage:/var/www/html/storage
+    ports:
+      - "80:80"
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-algo_drill}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - algo-drill-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: algo-drill-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-algo_drill}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - algo-drill-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: algo-drill-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - algo-drill-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  node:
+    image: node:20-alpine
+    container_name: algo-drill-node
+    working_dir: /var/www/html
+    volumes:
+      - ./backend-api:/var/www/html
+      - /var/www/html/node_modules
+    ports:
+      - "5173:5173"
+    command: npm run dev
+    networks:
+      - algo-drill-network
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  algo-drill-network:
+    driver: bridge
+
