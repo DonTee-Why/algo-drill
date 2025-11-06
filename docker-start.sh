@@ -23,12 +23,12 @@ LOG_CHANNEL=stack
 LOG_DEPRECATIONS_CHANNEL=null
 LOG_LEVEL=debug
 
-DB_CONNECTION=mysql
-DB_HOST=mysql
-DB_PORT=3306
+DB_CONNECTION=pgsql
+DB_HOST=postgres
+DB_PORT=5432
 DB_DATABASE=algo_drill
 DB_USERNAME=root
-DB_PASSWORD=root
+DB_PASSWORD=
 
 BROADCAST_DRIVER=log
 CACHE_DRIVER=redis
@@ -75,7 +75,7 @@ echo ""
 echo "✅ Algo Drill is ready!"
 echo ""
 echo "🌐 Application: http://localhost"
-echo "🗄️  MySQL: localhost:3306"
+echo "🗄️  PostgreSQL: localhost:5432"
 echo "📦 Redis: localhost:6379"
 echo ""
 echo "📝 View logs: docker-compose logs -f app"
