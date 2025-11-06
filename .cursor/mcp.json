@@ -1,8 +1,11 @@
 {
     "mcpServers": {
         "laravel-boost": {
-            "command": "docker-compose",
+            "command": "docker",
             "args": [
+                "compose",
+                "-f",
+                "/Users/timi/Documents/Projects/Personal/algo-drill/backend-api/docker-compose.yml",
                 "exec",
                 "-T",
                 "app",
@@ -10,7 +13,7 @@
                 "artisan",
                 "boost:mcp"
             ],
-            "cwd": "/Users/timi/Documents/Projects/Personal/algo-drill"
+            "cwd": "/Users/timi/Documents/Projects/Personal/algo-drill/backend-api"
         }
     }
 }
