@@ -57,7 +57,7 @@ fi
 
 # Build and start containers
 echo "🔨 Building and starting containers..."
-docker-compose -f backend-api/docker-compose.yml up -d --build
+cd backend-api && docker compose up -d --build && cd ..
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to be ready..."
@@ -65,11 +65,11 @@ sleep 10
 
 # Generate application key if not set
 echo "🔑 Checking application key..."
-docker-compose -f backend-api/docker-compose.yml exec -T app php artisan key:generate --force || true
+cd backend-api && docker compose exec -T app php artisan key:generate --force || true && cd ..
 
 # Run migrations
 echo "📦 Running database migrations..."
-docker-compose -f backend-api/docker-compose.yml exec -T app php artisan migrate --force || true
+cd backend-api && docker compose exec -T app php artisan migrate --force || true && cd ..
 
 echo ""
 echo "✅ Algo Drill is ready!"
@@ -78,7 +78,7 @@ echo "🌐 Application: http://localhost"
 echo "🗄️  PostgreSQL: localhost:5432"
 echo "📦 Redis: localhost:6379"
 echo ""
-echo "📝 View logs: docker-compose -f backend-api/docker-compose.yml logs -f app"
-echo "🛑 Stop services: docker-compose -f backend-api/docker-compose.yml down"
+echo "📝 View logs: cd backend-api && docker compose logs -f app"
+echo "🛑 Stop services: cd backend-api && docker compose down"
 echo ""
 

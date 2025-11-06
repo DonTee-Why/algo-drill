@@ -1,16 +1,15 @@
-version: '3.8'
 
 services:
   app:
     build:
-      context: ./backend-api
+      context: .
       dockerfile: Dockerfile.dev
     container_name: algo-drill-app
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
-      - ./backend-api:/var/www/html
-      - ./backend-api/storage:/var/www/html/storage
+      - .:/var/www/html
+      - ./storage:/var/www/html/storage
     ports:
       - "80:80"
     environment:
@@ -73,7 +72,7 @@ services:
     container_name: algo-drill-node
     working_dir: /var/www/html
     volumes:
-      - ./backend-api:/var/www/html
+      - .:/var/www/html
       - /var/www/html/node_modules
     ports:
       - "5173:5173"
