@@ -16,7 +16,7 @@ class EmailVerificationTest extends TestCase
 
         $response = $this->actingAs($user)->get('/email/verify');
 
-        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page->component('Auth/VerifyEmail'));
     }
 
     public function test_email_can_be_verified(): void
@@ -57,7 +57,13 @@ class EmailVerificationTest extends TestCase
     {
         $user = User::factory()->unverified()->create();
 
-        $response = $this->actingAs($user)->post('/email/verification-notification');
+        $response = $this->actingAs($user)
+            ->get('/email/verify');
+
+        $response->assertInertia(fn ($page) => $page->component('Auth/VerifyEmail'));
+
+        $response = $this->actingAs($user)
+            ->post('/email/verification-notification');
 
         $response->assertStatus(302);
     }
@@ -66,7 +72,11 @@ class EmailVerificationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->post('/email/verification-notification');
+        $response = $this->actingAs($user)
+            ->get('/email/verify');
+
+        $response = $this->actingAs($user)
+            ->post('/email/verification-notification');
 
         $response->assertRedirect('/dashboard');
     }
