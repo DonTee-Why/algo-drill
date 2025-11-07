@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\EmailVerified;
 use App\Helpers\LogsAuthEvents;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
@@ -45,7 +46,7 @@ final class EmailVerificationController extends Controller
         }
 
         if ($user->markEmailAsVerified()) {
-            event(new \Illuminate\Auth\Events\Verified($user));
+            event(new EmailVerified($user));
             $this->logAuthEvent($request, 'email_verified');
         }
 
