@@ -70,14 +70,16 @@ final class TokenController extends Controller
     {
         $token = $request->user()->tokens()->where('id', $id)->first();
 
-        if ($token) {
-            $this->logAuthEvent($request, 'token_revoked', [
-                'token_id' => $token->id,
-                'name' => $token->name,
-            ]);
+        if (!$token) {
+            return response()->json(['message' => 'Token not found'], 404);
         }
 
-        $request->user()->tokens()->where('id', $id)->delete();
+        $this->logAuthEvent($request, 'token_revoked', [
+            'token_id' => $token->id,
+            'name' => $token->name,
+        ]);
+
+        $token->delete();
 
         return response()->json(['message' => 'Token revoked successfully']);
     }
