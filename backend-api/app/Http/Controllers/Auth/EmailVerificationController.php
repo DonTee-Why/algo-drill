@@ -28,14 +28,24 @@ final class EmailVerificationController extends Controller
     /**
      * Mark the authenticated user's email address as verified.
      */
-    public function verify(Request $request): RedirectResponse
+    public function verify(Request $request, string $id, string $hash): RedirectResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
             return redirect()->intended(route('dashboard'));
         }
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new \Illuminate\Auth\Events\Verified($request->user()));
+        if ($user->getKey() != $id) {
+            abort(403);
+        }
+
+        if (! hash_equals(sha1($user->email), $hash)) {
+            abort(403);
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new \Illuminate\Auth\Events\Verified($user));
             $this->logAuthEvent($request, 'email_verified');
         }
 
