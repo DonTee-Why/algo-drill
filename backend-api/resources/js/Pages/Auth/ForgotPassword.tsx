@@ -1,9 +1,13 @@
-import { useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import AppLayout from '../Layouts/App';
 import React from 'react';
 
-export default function ForgotPassword() {
+interface Props {
+    status?: string;
+}
+
+export default function ForgotPassword({ status }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         email: '',
     });
@@ -15,6 +19,7 @@ export default function ForgotPassword() {
 
     return (
         <AppLayout>
+            <Head title="Forgot Password" />
             <div className="max-w-md mx-auto mt-8">
                 <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
                     <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Forgot Password</h2>

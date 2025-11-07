@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import AppLayout from '../Layouts/App';
 import React from 'react';
@@ -23,6 +23,7 @@ export default function ResetPassword({ email, token }: Props) {
 
     return (
         <AppLayout>
+            <Head title="Reset Password" />
             <div className="max-w-md mx-auto mt-8">
                 <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
                     <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Reset Password</h2>

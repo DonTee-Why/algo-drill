@@ -1,3 +1,4 @@
+import { Head } from '@inertiajs/react';
 import React from 'react';
 import AppLayout from './Layouts/App';
 
@@ -16,6 +17,7 @@ interface Props {
 export default function Dashboard({ auth }: Props) {
     return (
         <AppLayout auth={auth}>
+            <Head title="Dashboard" />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
                     Welcome, {auth?.user?.name || 'User'}!
@@ -44,4 +46,3 @@ export default function Dashboard({ auth }: Props) {
         </AppLayout>
     );
 }
-
