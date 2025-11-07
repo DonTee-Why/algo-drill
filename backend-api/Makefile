@@ -26,6 +26,9 @@ up:
 down:
 	docker compose down
 
+start:
+	cd .. && ./backend-api-start.sh
+
 restart:
 	docker compose restart
 
