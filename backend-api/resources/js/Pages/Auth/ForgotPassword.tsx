@@ -1,7 +1,8 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import AppLayout from '../Layouts/App';
 import React from 'react';
+import { Card, TextInput, Label, Button, Alert } from 'flowbite-react';
 
 interface Props {
     status?: string;
@@ -20,52 +21,57 @@ export default function ForgotPassword({ status }: Props) {
     return (
         <AppLayout>
             <Head title="Forgot Password" />
-            <div className="max-w-md mx-auto mt-8">
-                <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Forgot Password</h2>
-
-                    <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                        Forgot your password? No problem. Just let us know your email address and we will email you a password reset link.
+            <div className="flex items-center justify-center px-4">
+                <Card className="w-full max-w-md rounded-xl shadow-md">
+                    <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">AlgoDrill</h2>
+                        <p className="mt-2 text-gray-600 dark:text-gray-400">Forgot your password?</p>
                     </div>
 
+                    <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                        No problem. Just let us know your email address and we will email you a password reset link.
+                    </p>
+
                     {status && (
-                        <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                        <Alert color="success" className="mb-4">
                             {status}
-                        </div>
+                        </Alert>
                     )}
 
-                    <form onSubmit={submit}>
-                        <div className="mb-4">
-                            <label htmlFor="email" className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
-                                Email
-                            </label>
-                            <input
+                    {errors.email && (
+                        <Alert color="failure" className="mb-4">
+                            {errors.email}
+                        </Alert>
+                    )}
+
+                    <form onSubmit={submit} className="space-y-4">
+                        <div>
+                            <Label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Email</Label>
+                            <TextInput
                                 id="email"
                                 type="email"
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                color={errors.email ? 'failure' : 'gray'}
                                 required
                             />
-                            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                            {errors.email && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p>}
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
-                            >
+                            <Button type="submit" disabled={processing} color="blue" className="w-full">
                                 {processing ? 'Sending...' : 'Send Reset Link'}
-                            </button>
-                            <a href="/login" className="inline-block align-baseline font-bold text-sm text-blue-600 hover:text-blue-800">
+                            </Button>
+                        </div>
+
+                        <div className="text-center">
+                            <Link href="/login" className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
                                 Back to login
-                            </a>
+                            </Link>
                         </div>
                     </form>
-                </div>
+                </Card>
             </div>
         </AppLayout>
     );
 }
-

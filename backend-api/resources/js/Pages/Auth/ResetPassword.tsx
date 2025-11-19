@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import AppLayout from '../Layouts/App';
 import React from 'react';
+import { Card, TextInput, Label, Button, Alert } from 'flowbite-react';
 
 interface Props {
     email: string;
@@ -24,66 +25,61 @@ export default function ResetPassword({ email, token }: Props) {
     return (
         <AppLayout>
             <Head title="Reset Password" />
-            <div className="max-w-md mx-auto mt-8">
-                <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Reset Password</h2>
+            <div className="flex items-center justify-center px-4">
+                <Card className="w-full max-w-md rounded-xl shadow-md">
+                    <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">AlgoDrill</h2>
+                        <p className="mt-2 text-gray-600 dark:text-gray-400">Reset your password</p>
+                    </div>
 
-                    <form onSubmit={submit}>
-                        <div className="mb-4">
-                            <label htmlFor="email" className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
-                                Email
-                            </label>
-                            <input
+                    {errors.password && (
+                        <Alert color="failure" className="mb-4">
+                            {errors.password}
+                        </Alert>
+                    )}
+
+                    <form onSubmit={submit} className="space-y-4">
+                        <div>
+                            <Label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Email</Label>
+                            <TextInput
                                 id="email"
                                 type="email"
                                 value={data.email}
                                 readOnly
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-500 dark:text-gray-400 dark:bg-gray-700 leading-tight"
+                                className="bg-gray-50 dark:bg-gray-700"
                             />
                         </div>
 
-                        <div className="mb-4">
-                            <label htmlFor="password" className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
-                                Password
-                            </label>
-                            <input
+                        <div>
+                            <Label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Password</Label>
+                            <TextInput
                                 id="password"
                                 type="password"
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                color={errors.password ? 'failure' : 'gray'}
                                 required
                             />
-                            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+                            {errors.password && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>}
                         </div>
 
-                        <div className="mb-6">
-                            <label htmlFor="password_confirmation" className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
-                                Confirm Password
-                            </label>
-                            <input
+                        <div>
+                            <Label htmlFor="password_confirmation" className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Confirm Password</Label>
+                            <TextInput
                                 id="password_confirmation"
                                 type="password"
                                 value={data.password_confirmation}
                                 onChange={(e) => setData('password_confirmation', e.target.value)}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                                 required
                             />
                         </div>
 
-                        <div className="flex items-center justify-between">
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
-                            >
-                                {processing ? 'Resetting...' : 'Reset Password'}
-                            </button>
-                        </div>
+                        <Button type="submit" disabled={processing} color="blue" className="w-full">
+                            {processing ? 'Resetting...' : 'Reset Password'}
+                        </Button>
                     </form>
-                </div>
+                </Card>
             </div>
         </AppLayout>
     );
 }
-
