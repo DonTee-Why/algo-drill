@@ -13,14 +13,9 @@ services:
     ports:
       - "80:80"
     environment:
-      - APP_ENV=${APP_ENV:-local}
-      - APP_DEBUG=${APP_DEBUG:-true}
       - DB_CONNECTION=pgsql
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_DATABASE=${DB_DATABASE:-algo_drill}
-      - DB_USERNAME=${DB_USERNAME:-root}
-      - DB_PASSWORD=${DB_PASSWORD:-root}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     depends_on:
@@ -94,14 +89,9 @@ services:
     working_dir: /var/www/html
     environment:
       - CONTAINER_ROLE=queue-worker
-      - APP_ENV=${APP_ENV:-local}
-      - APP_DEBUG=${APP_DEBUG:-true}
       - DB_CONNECTION=pgsql
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_DATABASE=${DB_DATABASE:-algo_drill}
-      - DB_USERNAME=${DB_USERNAME:-root}
-      - DB_PASSWORD=${DB_PASSWORD:-root}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     volumes:
