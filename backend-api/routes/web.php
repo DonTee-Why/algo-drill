@@ -26,18 +26,20 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.update');
 });
 
+// Email verification (can work without auth for the verify route)
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware('throttle:6,1')
+    ->name('verification.verify');
+
 // Protected routes
 Route::middleware('auth')->group(function () {
     Route::get('dashboard', function () {
         return \Inertia\Inertia::render('Dashboard');
-    })->name('dashboard');
+    })->middleware('verified')->name('dashboard');
 
-    // Email verification
+    // Email verification (requires auth)
     Route::get('/email/verify', [EmailVerificationController::class, 'prompt'])
         ->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
