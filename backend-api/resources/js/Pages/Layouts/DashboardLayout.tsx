@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { PropsWithChildren, useState } from 'react';
+import { PropsWithChildren, useState, useEffect } from 'react';
 import React from 'react';
 import { Sidebar, SidebarItems, SidebarItemGroup, Navbar, Avatar, Dropdown, DropdownHeader, DropdownItem, DropdownDivider, Select } from 'flowbite-react';
 
@@ -19,11 +19,54 @@ export default function DashboardLayout({
     children,
 }: PropsWithChildren<Props>) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [theme, setTheme] = useState('dark');
+    const [themePreference, setThemePreference] = useState<'light' | 'dark' | 'system'>(() => {
+        // Check localStorage, default to 'system'
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('theme-preference');
+            if (stored === 'light' || stored === 'dark' || stored === 'system') {
+                return stored;
+            }
+        }
+        return 'system';
+    });
     const [preferredLang, setPreferredLang] = useState('javascript');
 
+    // Apply theme changes to document
+    useEffect(() => {
+        const root = document.documentElement;
+        
+        const applyTheme = (isDark: boolean) => {
+            if (isDark) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+        };
+
+        if (themePreference === 'system') {
+            // Use system preference
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            applyTheme(mediaQuery.matches);
+            
+            // Listen for system preference changes
+            const handleChange = (e: MediaQueryListEvent) => applyTheme(e.matches);
+            mediaQuery.addEventListener('change', handleChange);
+            
+            return () => mediaQuery.removeEventListener('change', handleChange);
+        } else {
+            // Use user preference
+            applyTheme(themePreference === 'dark');
+        }
+        
+        localStorage.setItem('theme-preference', themePreference);
+    }, [themePreference]);
+
+    const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+        setThemePreference(newTheme);
+    };
+
     return (
-        <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="bg-gray-200 dark:bg-gray-900 min-h-screen">
             <Navbar fluid className="fixed top-0 z-50 w-full border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <div className="flex items-center justify-between w-full px-4">
                     <div className="flex items-center gap-4">
@@ -46,13 +89,13 @@ export default function DashboardLayout({
                         </span>
                         
                         {/* Language Selector */}
-                        <div className="hidden md:flex items-center gap-2">
+                        <div className="hidden md:flex items-center gap-2 cursor-pointer">
                             <Select
                                 id="headerLang"
                                 value={preferredLang}
                                 onChange={(e) => setPreferredLang(e.target.value)}
                                 sizing="sm"
-                                className="w-32"
+                                className="w-32 cursor-pointer"
                             >
                                 <option value="javascript">JavaScript</option>
                                 <option value="python">Python</option>
@@ -62,23 +105,60 @@ export default function DashboardLayout({
                             </Select>
                         </div>
 
-                        {/* Theme Toggle */}
-                        <button
-                            type="button"
-                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                            className="p-2 text-gray-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400"
-                            aria-label="Toggle theme"
+                        {/* Theme Selector */}
+                        <Dropdown
+                            label={
+                                <button
+                                    type="button"
+                                    className="p-2 text-gray-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 cursor-pointer"
+                                    aria-label="Theme selector"
+                                >
+                                    {themePreference === 'system' ? (
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
+                                        </svg>
+                                    ) : themePreference === 'dark' ? (
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fillRule="evenodd" clipRule="evenodd" />
+                                        </svg>
+                                    )}
+                                </button>
+                            }
+                            arrowIcon={false}
+                            inline
                         >
-                            {theme === 'dark' ? (
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fillRule="evenodd" clipRule="evenodd" />
-                                </svg>
-                            ) : (
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                                </svg>
-                            )}
-                        </button>
+                            <DropdownItem onClick={() => handleThemeChange('light')}>
+                                <div className="flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fillRule="evenodd" clipRule="evenodd" />
+                                    </svg>
+                                    <span>Light</span>
+                                    {themePreference === 'light' && <span className="ml-auto">✓</span>}
+                                </div>
+                            </DropdownItem>
+                            <DropdownItem onClick={() => handleThemeChange('dark')}>
+                                <div className="flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                                    </svg>
+                                    <span>Dark</span>
+                                    {themePreference === 'dark' && <span className="ml-auto">✓</span>}
+                                </div>
+                            </DropdownItem>
+                            <DropdownItem onClick={() => handleThemeChange('system')}>
+                                <div className="flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
+                                    </svg>
+                                    <span>System</span>
+                                    {themePreference === 'system' && <span className="ml-auto">✓</span>}
+                                </div>
+                            </DropdownItem>
+                        </Dropdown>
 
                         <Dropdown
                             label={
@@ -110,11 +190,11 @@ export default function DashboardLayout({
                 </div>
             </Navbar>
 
-            <div className="flex pt-16">
+            <div className="flex pt-16 h-100vh">
                 {/* Sidebar */}
                 <Sidebar
                     aria-label="Sidebar navigation"
-                    className={`fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] transition-transform ${
+                    className={`fixed left-0 top-16 z-40 h-[calc(100vh-3.5rem)] transition-transform ${
                         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                     } md:translate-x-0`}
                 >

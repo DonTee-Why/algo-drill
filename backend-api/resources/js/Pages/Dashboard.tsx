@@ -71,7 +71,7 @@ export default function Dashboard({ auth }: Props) {
                             You've got an active session in progress: {activeSessions[0]?.problem || 'Two Sum'}. You can resume or start something new.
                         </p>
                     </div>
-                    <Button color="blue" size="lg" onClick={() => setShowProblemModal(true)} className="cursor-pointer hover:bg-blue-700 hover:text-white">
+                    <Button color="blue" onClick={() => setShowProblemModal(true)} className="cursor-pointer hover:bg-blue-600 hover:text-white">
                         Start new problem
                     </Button>
                 </div>
@@ -83,7 +83,7 @@ export default function Dashboard({ auth }: Props) {
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <h5 className="text-xl font-bold text-gray-900 dark:text-white">Continue where you left off</h5>
-                                <p className="text-sm text-gray-500">Jump back into your last active problem.</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Jump back into your last active problem.</p>
                             </div>
                             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                                 <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-3">
@@ -95,7 +95,7 @@ export default function Dashboard({ auth }: Props) {
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Current stage: {activeSessions[0].stage}</p>
                                     </div>
                                     <Button size="md" color="blue" className="cursor-pointer hover:bg-blue-600 hover:text-white">
-                                        {`Resume at ${activeSessions[0].stage}`}
+                                        {`Resume`}
                                     </Button>
                                 </div>
                             </div>
@@ -135,7 +135,7 @@ export default function Dashboard({ auth }: Props) {
                                     Weekly snapshot
                                 </span>
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
                                 Track how consistently you&apos;re practicing.
                             </div>
                         </div>
@@ -181,7 +181,7 @@ export default function Dashboard({ auth }: Props) {
                         <div className="flex items-center justify-between gap-8">
                             <div className="space-y-2 flex-1">
                                 <h5 className="text-xl font-bold text-gray-900 dark:text-white">Start a new problem</h5>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Pick a problem and go through Clarify → Brute Force → Pseudocode → Code → Test → Optimize.
                                 </p>
                             </div>
