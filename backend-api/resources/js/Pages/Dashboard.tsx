@@ -37,6 +37,7 @@ interface Problem {
 
 export default function Dashboard({ auth }: Props) {
     const [showProblemModal, setShowProblemModal] = useState(false);
+    const [selectedDifficulty, setSelectedDifficulty] = useState<'All' | 'Easy' | 'Medium' | 'Hard'>('All');
 
     // Dummy data
     const progress: ProgressData = { completed: 5, total: 12, avgScore: 2.4, timeToBF: 183, hintsUsed: 3 };
@@ -44,11 +45,21 @@ export default function Dashboard({ auth }: Props) {
         { id: 1, problem: 'Two Sum', stage: 'PSEUDOCODE' },
         { id: 2, problem: 'Valid Parentheses', stage: 'BRUTE_FORCE' },
     ];
-    const problems: Problem[] = [
+    const allProblems: Problem[] = [
         { id: 3, title: 'Reverse Linked List', difficulty: 'Medium' },
         { id: 4, title: 'Longest Substring Without Repeating', difficulty: 'Hard' },
         { id: 5, title: 'Move Zeroes', difficulty: 'Easy' },
     ];
+
+    const problems = selectedDifficulty === 'All' 
+        ? allProblems 
+        : allProblems.filter(p => p.difficulty === selectedDifficulty);
+
+    const problemTags: Record<number, string[]> = {
+        3: ['Linked List', 'Iteration'],
+        4: ['Sliding Window', 'Strings'],
+        5: ['Arrays', 'Two Pointers'],
+    };
 
     const progressPercentage = (progress.completed / progress.total) * 100;
     const difficultyColors: Record<string, string> = {
@@ -192,33 +203,72 @@ export default function Dashboard({ auth }: Props) {
                     </Card>
                 </div>
 
-                {/* Problem Selection Modal */}
-                <Modal show={showProblemModal} onClose={() => setShowProblemModal(false)} size="lg">
-                    <ModalHeader>Select a Problem</ModalHeader>
+                {/* Problem Explorer Modal */}
+                <Modal show={showProblemModal} onClose={() => setShowProblemModal(false)} size="2xl">
+                    <ModalHeader className='border-b-0'>
+                        <div>
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Problem Explorer</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                Choose a problem to begin a new guided session.
+                            </p>
+                        </div>
+                    </ModalHeader>
                     <ModalBody>
-                        <div className="space-y-3">
-                            {problems.map((problem) => (
-                                <div
-                                    key={problem.id}
-                                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                                >
-                                    <div>
-                                        <p className="font-medium text-gray-900 dark:text-white">{problem.title}</p>
-                                        <Badge color={difficultyColors[problem.difficulty] as 'success' | 'warning' | 'failure'}>
-                                            {problem.difficulty}
-                                        </Badge>
-                                    </div>
-                                    <Button size="sm" color="blue">
-                                        Start
+                        <div className="space-y-6">
+                            {/* Difficulty Filter Buttons */}
+                            <div className="flex gap-2">
+                                {(['All', 'Easy', 'Medium', 'Hard'] as const).map((difficulty) => (
+                                    <Button
+                                        key={difficulty}
+                                        size="sm"
+                                        color={selectedDifficulty === difficulty ? 'blue' : 'gray'}
+                                        onClick={() => setSelectedDifficulty(difficulty)}
+                                        className="cursor-pointer"
+                                    >
+                                        {difficulty}
                                     </Button>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
+
+                            {/* Problem List */}
+                            <div className="space-y-4">
+                                {problems.map((problem) => (
+                                    <div
+                                        key={problem.id}
+                                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                                    >
+                                        <div className="flex-1">
+                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                                                {problem.title}
+                                            </h4>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                                Difficulty: {problem.difficulty}
+                                            </p>
+                                            <div className="flex gap-2">
+                                                {problemTags[problem.id]?.map((tag) => (
+                                                    <span
+                                                        key={tag}
+                                                        className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full"
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <Button size="sm" color="blue" className="ml-4 whitespace-nowrap cursor-pointer hover:bg-blue-600">
+                                            Start
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </ModalBody>
                     <ModalFooter>
-                        <Button color="gray" onClick={() => setShowProblemModal(false)}>
-                            Cancel
-                        </Button>
+                        <div className="flex justify-end w-full">
+                            <Button color="gray" onClick={() => setShowProblemModal(false)} className="cursor-pointer">
+                                Close
+                            </Button>
+                        </div>
                     </ModalFooter>
                 </Modal>
             </div>
