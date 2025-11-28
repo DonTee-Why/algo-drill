@@ -10,6 +10,19 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
+        <!-- Theme initialization script (must run before page renders) -->
+        <script>
+            (function() {
+                const themePreference = localStorage.getItem('theme-preference') || 'system';
+                const isDark = themePreference === 'dark' || 
+                    (themePreference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                }
+            })();
+        </script>
+
         <!-- Scripts -->
         {{-- @routes --}}
         @vite(['resources/css/app.css', 'resources/js/app.jsx'])
