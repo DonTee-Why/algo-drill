@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\ProblemController as AdminProblemController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\ProblemController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -45,4 +47,17 @@ Route::middleware('auth')->group(function () {
         ->name('verification.send');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+    // User-facing problem routes
+    Route::get('/problems', [ProblemController::class, 'index'])->name('problems.index');
+    Route::get('/problems/{problem:slug}', [ProblemController::class, 'show'])->name('problems.show');
+
+    // Admin routes
+    Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('dashboard', function () {
+            return \Inertia\Inertia::render('Admin/Dashboard');
+        })->name('dashboard');
+
+        Route::resource('problems', AdminProblemController::class)->except(['show']);
+    });
 });

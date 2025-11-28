@@ -19,6 +19,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string $email
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property array|null $preferred_languages
+ * @property bool $is_admin
  * @property string $password
  * @property string|null $remember_token
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -41,6 +42,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'preferred_languages',
+        'is_admin',
     ];
 
     /**
@@ -64,6 +66,12 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'preferred_languages' => 'array',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
     }
 }
