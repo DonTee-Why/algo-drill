@@ -48,9 +48,13 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
+    
     // User-facing problem routes
     Route::get('/problems', [ProblemController::class, 'index'])->name('problems.index');
     Route::get('/problems/{problem:slug}', [ProblemController::class, 'show'])->name('problems.show');
+
+    // AJAX endpoint to fetch problems for the dashboard modal
+    Route::get('/api/problems', [ProblemController::class, 'fetchProblems'])->name('api.problems.fetch');
 
     // Admin routes
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {

@@ -1,7 +1,9 @@
 import { Head } from '@inertiajs/react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from './Layouts/DashboardLayout';
-import { Card, Progress, Button, Modal, ModalHeader, ModalBody, ModalFooter, Badge } from 'flowbite-react';
+import { Card, Progress, Button, Modal, ModalHeader, ModalBody, ModalFooter, Badge, Spinner } from 'flowbite-react';
+import axios from 'axios';
+import { route } from 'ziggy-js';
 
 interface Props {
     auth?: {
@@ -30,35 +32,54 @@ interface Session {
 }
 
 interface Problem {
-    id: number;
+    id: string;
     title: string;
-    difficulty: string;
+    slug: string;
+    difficulty: 'Easy' | 'Medium' | 'Hard';
+    tags: string[];
+    is_premium: boolean;
+    created_at: string;
 }
 
 export default function Dashboard({ auth }: Props) {
     const [showProblemModal, setShowProblemModal] = useState(false);
     const [selectedDifficulty, setSelectedDifficulty] = useState<'All' | 'Easy' | 'Medium' | 'Hard'>('All');
+    const [problems, setProblems] = useState<Problem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    // Dummy data
+    // Dummy data for progress and sessions
     const progress: ProgressData = { completed: 5, total: 12, avgScore: 2.4, timeToBF: 183, hintsUsed: 3 };
     const activeSessions: Session[] = [
         { id: 1, problem: 'Two Sum', stage: 'PSEUDOCODE' },
         { id: 2, problem: 'Valid Parentheses', stage: 'BRUTE_FORCE' },
     ];
-    const allProblems: Problem[] = [
-        { id: 3, title: 'Reverse Linked List', difficulty: 'Medium' },
-        { id: 4, title: 'Longest Substring Without Repeating', difficulty: 'Hard' },
-        { id: 5, title: 'Move Zeroes', difficulty: 'Easy' },
-    ];
 
-    const problems = selectedDifficulty === 'All' 
-        ? allProblems 
-        : allProblems.filter(p => p.difficulty === selectedDifficulty);
+    useEffect(() => {
+        if (showProblemModal) {
+            fetchProblems();
+        }
+    }, [showProblemModal, selectedDifficulty]);
 
-    const problemTags: Record<number, string[]> = {
-        3: ['Linked List', 'Iteration'],
-        4: ['Sliding Window', 'Strings'],
-        5: ['Arrays', 'Two Pointers'],
+    const fetchProblems = async () => {
+        setLoading(true);
+        setError(null);
+        
+        try {
+            const params: Record<string, string> = {};
+            
+            if (selectedDifficulty !== 'All') {
+                params.difficulty = selectedDifficulty;
+            }
+
+            const response = await axios.get(route('api.problems.fetch'), { params });
+            setProblems(response.data.data || []);
+        } catch (err) {
+            setError('Failed to load problems. Please try again.');
+            console.error('Error fetching problems:', err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const progressPercentage = (progress.completed / progress.total) * 100;
@@ -224,43 +245,88 @@ export default function Dashboard({ auth }: Props) {
                                         color={selectedDifficulty === difficulty ? 'blue' : 'gray'}
                                         onClick={() => setSelectedDifficulty(difficulty)}
                                         className="cursor-pointer"
+                                        disabled={loading}
                                     >
                                         {difficulty}
                                     </Button>
                                 ))}
                             </div>
 
-                            {/* Problem List */}
-                            <div className="space-y-4">
-                                {problems.map((problem) => (
-                                    <div
-                                        key={problem.id}
-                                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                            {/* Loading State */}
+                            {loading && (
+                                <div className="flex items-center justify-center py-8">
+                                    <Spinner size="xl" />
+                                </div>
+                            )}
+
+                            {/* Error State */}
+                            {error && !loading && (
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
+                                    <p className="text-red-600 dark:text-red-400">{error}</p>
+                                    <Button
+                                        size="sm"
+                                        color="failure"
+                                        onClick={fetchProblems}
+                                        className="mt-2 cursor-pointer"
                                     >
-                                        <div className="flex-1">
-                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-                                                {problem.title}
-                                            </h4>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                                Difficulty: {problem.difficulty}
-                                            </p>
-                                            <div className="flex gap-2">
-                                                {problemTags[problem.id]?.map((tag) => (
-                                                    <span
-                                                        key={tag}
-                                                        className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full"
-                                                    >
-                                                        {tag}
-                                                    </span>
-                                                ))}
-                                            </div>
+                                        Retry
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Problem List */}
+                            {!loading && !error && (
+                                <div className="space-y-4">
+                                    {problems.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                            No problems found. Try adjusting your filters.
                                         </div>
-                                        <Button size="sm" color="blue" className="ml-4 whitespace-nowrap cursor-pointer hover:bg-blue-600">
-                                            Start
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
+                                    ) : (
+                                        problems.map((problem) => (
+                                            <div
+                                                key={problem.id}
+                                                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h4 className="font-semibold text-gray-900 dark:text-white">
+                                                            {problem.title}
+                                                        </h4>
+                                                        {problem.is_premium && (
+                                                            <Badge color="warning" size="sm">
+                                                                Premium
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Badge color={difficultyColors[problem.difficulty] as any} size="sm">
+                                                            {problem.difficulty}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        {problem.tags.slice(0, 3).map((tag) => (
+                                                            <span
+                                                                key={tag}
+                                                                className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full"
+                                                            >
+                                                                {tag}
+                                                            </span>
+                                                        ))}
+                                                        {problem.tags.length > 3 && (
+                                                            <span className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400">
+                                                                +{problem.tags.length - 3} more
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <Button size="sm" color="blue" className="ml-4 whitespace-nowrap cursor-pointer hover:bg-blue-600">
+                                                    Start
+                                                </Button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </ModalBody>
                     <ModalFooter>
