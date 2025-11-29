@@ -21,8 +21,11 @@ class ProblemsSeeder extends Seeder
         // $this->seedMergeTwoSortedLists();
         // $this->seedContainsDuplicate();
         // $this->seedLongestSubstringWithoutRepeating();
-        $this->seedMoveZeroes();
-        $this->seedReverseLinkedList();
+        // $this->seedMoveZeroes();
+        // $this->seedReverseLinkedList();
+        $this->seedThreeSum();
+        $this->seedTrappingRainWater();
+        $this->seedMedianOfTwoSortedArrays();
     }
 
     protected function seedTwoSum(): void
@@ -504,6 +507,214 @@ class ProblemsSeeder extends Seeder
             'problem_id' => $problem->id,
             'input' => [[1]],
             'expected' => [1],
+            'is_edge' => true,
+            'weight' => 2,
+        ]);
+    }
+
+    protected function seedThreeSum(): void
+    {
+        $problem = Problem::create([
+            'title' => '3Sum',
+            'difficulty' => 'Medium',
+            'tags' => ['array', 'two-pointers', 'sorting'],
+            'constraints' => [
+                '3 ≤ nums.length ≤ 3000',
+                '-10⁵ ≤ nums[i] ≤ 10⁵',
+            ],
+            'description_md' => "## Problem\n\nGiven an integer array `nums`, return all the triplets `[nums[i], nums[j], nums[k]]` such that `i != j`, `i != k`, and `j != k`, and `nums[i] + nums[j] + nums[k] == 0`.\n\nNotice that the solution set must not contain duplicate triplets.\n\n## Examples\n\n**Example 1:**\n```\nInput: nums = [-1,0,1,2,-1,-4]\nOutput: [[-1,-1,2],[-1,0,1]]\nExplanation:\nnums[0] + nums[1] + nums[2] = (-1) + 0 + 1 = 0.\nnums[1] + nums[2] + nums[4] = 0 + 1 + (-1) = 0.\nnums[0] + nums[3] + nums[4] = (-1) + 2 + (-1) = 0.\nThe distinct triplets are [-1,0,1] and [-1,-1,2].\n```\n\n**Example 2:**\n```\nInput: nums = [0,1,1]\nOutput: []\nExplanation: The only possible triplet does not sum up to 0.\n```\n\n**Example 3:**\n```\nInput: nums = [0,0,0]\nOutput: [[0,0,0]]\nExplanation: The only possible triplet sums up to 0.\n```",
+            'is_premium' => false,
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'javascript',
+            'function_name' => 'threeSum',
+            'params' => [
+                ['name' => 'nums', 'type' => 'number[]'],
+            ],
+            'returns' => ['type' => 'number[][]'],
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'python',
+            'function_name' => 'threeSum',
+            'params' => [
+                ['name' => 'nums', 'type' => 'List[int]'],
+            ],
+            'returns' => ['type' => 'List[List[int]]'],
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[-1, 0, 1, 2, -1, -4]],
+            'expected' => [[-1, -1, 2], [-1, 0, 1]],
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[0, 1, 1]],
+            'expected' => [],
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[0, 0, 0]],
+            'expected' => [[0, 0, 0]],
+            'is_edge' => true,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[-2, 0, 1, 1, 2]],
+            'expected' => [[-2, 0, 2], [-2, 1, 1]],
+            'is_edge' => false,
+            'weight' => 2,
+        ]);
+    }
+
+    protected function seedTrappingRainWater(): void
+    {
+        $problem = Problem::create([
+            'title' => 'Trapping Rain Water',
+            'difficulty' => 'Hard',
+            'tags' => ['array', 'two-pointers', 'dynamic-programming', 'stack'],
+            'constraints' => [
+                'n == height.length',
+                '1 ≤ n ≤ 2 × 10⁴',
+                '0 ≤ height[i] ≤ 10⁵',
+            ],
+            'description_md' => "## Problem\n\nGiven `n` non-negative integers representing an elevation map where the width of each bar is `1`, compute how much water it can trap after raining.\n\n## Examples\n\n**Example 1:**\n```\nInput: height = [0,1,0,2,1,0,1,3,2,1,2,1]\nOutput: 6\nExplanation: The elevation map (black section) is represented by array [0,1,0,2,1,0,1,3,2,1,2,1]. In this case, 6 units of rain water (blue section) are being trapped.\n```\n\n**Example 2:**\n```\nInput: height = [4,2,0,3,2,5]\nOutput: 9\n```\n\n**Example 3:**\n```\nInput: height = []\nOutput: 0\n```",
+            'is_premium' => false,
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'javascript',
+            'function_name' => 'trap',
+            'params' => [
+                ['name' => 'height', 'type' => 'number[]'],
+            ],
+            'returns' => ['type' => 'number'],
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'python',
+            'function_name' => 'trap',
+            'params' => [
+                ['name' => 'height', 'type' => 'List[int]'],
+            ],
+            'returns' => ['type' => 'int'],
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]],
+            'expected' => 6,
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[4, 2, 0, 3, 2, 5]],
+            'expected' => 9,
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[]],
+            'expected' => 0,
+            'is_edge' => true,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[3, 0, 2, 0, 4]],
+            'expected' => 7,
+            'is_edge' => false,
+            'weight' => 2,
+        ]);
+    }
+
+    protected function seedMedianOfTwoSortedArrays(): void
+    {
+        $problem = Problem::create([
+            'title' => 'Median of Two Sorted Arrays',
+            'difficulty' => 'Hard',
+            'tags' => ['array', 'binary-search', 'divide-and-conquer'],
+            'constraints' => [
+                'nums1.length == m',
+                'nums2.length == n',
+                '0 ≤ m ≤ 1000',
+                '0 ≤ n ≤ 1000',
+                '1 ≤ m + n ≤ 2000',
+                '-10⁶ ≤ nums1[i], nums2[i] ≤ 10⁶',
+            ],
+            'description_md' => "## Problem\n\nGiven two sorted arrays `nums1` and `nums2` of size `m` and `n` respectively, return **the median** of the two sorted arrays.\n\nThe overall run time complexity should be `O(log (m+n))`.\n\n## Examples\n\n**Example 1:**\n```\nInput: nums1 = [1,3], nums2 = [2]\nOutput: 2.00000\nExplanation: merged array = [1,2,3] and median is 2.\n```\n\n**Example 2:**\n```\nInput: nums1 = [1,2], nums2 = [3,4]\nOutput: 2.50000\nExplanation: merged array = [1,2,3,4] and median is (2 + 3) / 2 = 2.5.\n```\n\n**Example 3:**\n```\nInput: nums1 = [], nums2 = [1]\nOutput: 1.00000\n```",
+            'is_premium' => false,
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'javascript',
+            'function_name' => 'findMedianSortedArrays',
+            'params' => [
+                ['name' => 'nums1', 'type' => 'number[]'],
+                ['name' => 'nums2', 'type' => 'number[]'],
+            ],
+            'returns' => ['type' => 'number'],
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'python',
+            'function_name' => 'findMedianSortedArrays',
+            'params' => [
+                ['name' => 'nums1', 'type' => 'List[int]'],
+                ['name' => 'nums2', 'type' => 'List[int]'],
+            ],
+            'returns' => ['type' => 'float'],
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[1, 3], [2]],
+            'expected' => 2.0,
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[1, 2], [3, 4]],
+            'expected' => 2.5,
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[], [1]],
+            'expected' => 1.0,
+            'is_edge' => true,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[2], []],
+            'expected' => 2.0,
             'is_edge' => true,
             'weight' => 2,
         ]);
