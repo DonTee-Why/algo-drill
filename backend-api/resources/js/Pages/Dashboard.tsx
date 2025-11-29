@@ -265,7 +265,7 @@ export default function Dashboard({ auth }: Props) {
                     </ModalBody>
                     <ModalFooter>
                         <div className="flex justify-end w-full">
-                            <Button color="gray" onClick={() => setShowProblemModal(false)} className="cursor-pointer">
+                            <Button color="gray" className='cursor-pointer border-gray-800 hover:bg-gray-900 hover:text-white' onClick={() => setShowProblemModal(false)}>
                                 Close
                             </Button>
                         </div>

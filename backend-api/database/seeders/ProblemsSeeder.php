@@ -16,11 +16,13 @@ class ProblemsSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->seedTwoSum();
-        $this->seedValidPalindrome();
-        $this->seedMergeTwoSortedLists();
-        $this->seedContainsDuplicate();
-        $this->seedLongestSubstringWithoutRepeating();
+        // $this->seedTwoSum();
+        // $this->seedValidPalindrome();
+        // $this->seedMergeTwoSortedLists();
+        // $this->seedContainsDuplicate();
+        // $this->seedLongestSubstringWithoutRepeating();
+        $this->seedMoveZeroes();
+        $this->seedReverseLinkedList();
     }
 
     protected function seedTwoSum(): void
@@ -368,6 +370,140 @@ class ProblemsSeeder extends Seeder
             'problem_id' => $problem->id,
             'input' => ['dvdf'],
             'expected' => 3,
+            'is_edge' => true,
+            'weight' => 2,
+        ]);
+    }
+
+    protected function seedMoveZeroes(): void
+    {
+        $problem = Problem::create([
+            'title' => 'Move Zeroes',
+            'difficulty' => 'Easy',
+            'tags' => ['array', 'two-pointers'],
+            'constraints' => [
+                '1 ≤ nums.length ≤ 10⁴',
+                '-2³¹ ≤ nums[i] ≤ 2³¹ - 1',
+            ],
+            'description_md' => "## Problem\n\nGiven an integer array `nums`, move all `0`'s to the end of it while maintaining the relative order of the non-zero elements.\n\n**Note:** You must do this in-place without making a copy of the array.\n\n## Examples\n\n**Example 1:**\n```\nInput: nums = [0,1,0,3,12]\nOutput: [1,3,12,0,0]\n```\n\n**Example 2:**\n```\nInput: nums = [0]\nOutput: [0]\n```\n\n**Example 3:**\n```\nInput: nums = [1,2,3]\nOutput: [1,2,3]\nExplanation: No zeros to move.\n```",
+            'is_premium' => false,
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'javascript',
+            'function_name' => 'moveZeroes',
+            'params' => [
+                ['name' => 'nums', 'type' => 'number[]'],
+            ],
+            'returns' => ['type' => 'void'],
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'python',
+            'function_name' => 'moveZeroes',
+            'params' => [
+                ['name' => 'nums', 'type' => 'List[int]'],
+            ],
+            'returns' => ['type' => 'None'],
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[0, 1, 0, 3, 12]],
+            'expected' => [1, 3, 12, 0, 0],
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[0]],
+            'expected' => [0],
+            'is_edge' => true,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[1, 2, 3]],
+            'expected' => [1, 2, 3],
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[0, 0, 1]],
+            'expected' => [1, 0, 0],
+            'is_edge' => true,
+            'weight' => 2,
+        ]);
+    }
+
+    protected function seedReverseLinkedList(): void
+    {
+        $problem = Problem::create([
+            'title' => 'Reverse Linked List',
+            'difficulty' => 'Easy',
+            'tags' => ['linked-list', 'recursion'],
+            'constraints' => [
+                'The number of nodes in the list is the range [0, 5000]',
+                '-5000 ≤ Node.val ≤ 5000',
+            ],
+            'description_md' => "## Problem\n\nGiven the `head` of a singly linked list, reverse the list, and return the reversed list.\n\n## Examples\n\n**Example 1:**\n```\nInput: head = [1,2,3,4,5]\nOutput: [5,4,3,2,1]\n```\n\n**Example 2:**\n```\nInput: head = [1,2]\nOutput: [2,1]\n```\n\n**Example 3:**\n```\nInput: head = []\nOutput: []\n```\n\n## Note\nFor testing purposes, linked lists are represented as arrays.\n\n## Follow-up\nCan you solve it both iteratively and recursively?",
+            'is_premium' => false,
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'javascript',
+            'function_name' => 'reverseList',
+            'params' => [
+                ['name' => 'head', 'type' => 'number[]'],
+            ],
+            'returns' => ['type' => 'number[]'],
+        ]);
+
+        ProblemSignature::create([
+            'problem_id' => $problem->id,
+            'lang' => 'python',
+            'function_name' => 'reverseList',
+            'params' => [
+                ['name' => 'head', 'type' => 'List[int]'],
+            ],
+            'returns' => ['type' => 'List[int]'],
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[1, 2, 3, 4, 5]],
+            'expected' => [5, 4, 3, 2, 1],
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[1, 2]],
+            'expected' => [2, 1],
+            'is_edge' => false,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[]],
+            'expected' => [],
+            'is_edge' => true,
+            'weight' => 1,
+        ]);
+
+        ProblemTest::create([
+            'problem_id' => $problem->id,
+            'input' => [[1]],
+            'expected' => [1],
             'is_edge' => true,
             'weight' => 2,
         ]);

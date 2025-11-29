@@ -73,7 +73,7 @@ export default function Index({ auth, problems }: Props) {
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableHeadCell>ID</TableHeadCell>
+                                {/* <TableHeadCell>ID</TableHeadCell> */}
                                 <TableHeadCell>Title</TableHeadCell>
                                 <TableHeadCell>Difficulty</TableHeadCell>
                                 <TableHeadCell>Premium</TableHeadCell>
@@ -87,9 +87,9 @@ export default function Index({ auth, problems }: Props) {
                                     key={problem.id}
                                     className="bg-white dark:border-gray-700 dark:bg-gray-800"
                                 >
-                                    <TableCell className="font-mono text-xs text-gray-600 dark:text-gray-400">
+                                    {/* <TableCell className="font-mono text-xs text-gray-600 dark:text-gray-400">
                                         {problem.id.substring(0, 8)}...
-                                    </TableCell>
+                                    </TableCell> */}
                                     <TableCell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
                                         {problem.title}
                                     </TableCell>
