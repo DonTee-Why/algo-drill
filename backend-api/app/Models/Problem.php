@@ -25,6 +25,8 @@ use Illuminate\Support\Str;
  * @property \Illuminate\Support\Carbon $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProblemSignature> $signatures
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProblemTest> $tests
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Solution> $solutions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, CoachingSession> $coachingSessions
  */
 class Problem extends Model
 {
@@ -68,5 +70,15 @@ class Problem extends Model
     public function tests(): HasMany
     {
         return $this->hasMany(ProblemTest::class);
+    }
+
+    public function solutions(): HasMany
+    {
+        return $this->hasMany(Solution::class);
+    }
+
+    public function coachingSessions(): HasMany
+    {
+        return $this->hasMany(CoachingSession::class);
     }
 }
