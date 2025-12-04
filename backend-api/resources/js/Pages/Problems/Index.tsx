@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import React, { useState } from 'react';
 import DashboardLayout from '../Layouts/DashboardLayout';
-import { Button, TextInput, Badge, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from 'flowbite-react';
+import { Button, TextInput, Badge, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Tooltip } from 'flowbite-react';
 import { route } from 'ziggy-js';
 
 interface Problem {
@@ -48,6 +48,7 @@ interface Props {
 export default function Index({ auth, problems, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [difficulty, setDifficulty] = useState<string>(filters.difficulty || 'All');
+    const [startingSession, setStartingSession] = useState<string | null>(null);
 
     const handleFilter = () => {
         const params: Record<string, string> = {};
@@ -60,7 +61,19 @@ export default function Index({ auth, problems, filters }: Props) {
             params.difficulty = difficulty;
         }
 
-        router.get(route('problems.index'), params, { preserveState: true });
+        router.get(route('problems.index'), params, { preserveScroll: true, replace: true });
+    };
+
+    const handleStartSession = (problemId: string) => {
+        setStartingSession(problemId);
+        router.post(
+            route('sessions.store'),
+            { problem_id: problemId },
+            {
+                onFinish: () => setStartingSession(null),
+                preserveScroll: true,
+            }
+        );
     };
 
     const difficultyColors: Record<string, string> = {
@@ -94,7 +107,7 @@ export default function Index({ auth, problems, filters }: Props) {
                                 placeholder="Search problems..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleFilter()}
+                                onKeyDown={(e) => e.key === 'Enter' && handleFilter()}
                             />
                         </div>
                         <div>
@@ -169,12 +182,28 @@ export default function Index({ auth, problems, filters }: Props) {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Link
-                                            href={route('problems.show', problem.slug)}
-                                            className="font-medium text-cyan-600 hover:underline dark:text-cyan-500"
-                                        >
-                                            View
-                                        </Link>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                color="blue"
+                                                onClick={() => handleStartSession(problem.id)}
+                                                disabled={startingSession === problem.id}
+                                                className="cursor-pointer"
+                                            >
+                                                {startingSession === problem.id ? 'Starting...' : 'Start'}
+                                            </Button>
+                                            <Tooltip content="View problem details">
+                                                <Link
+                                                    href={route('problems.show', problem.slug)}
+                                                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                </Link>
+                                            </Tooltip>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}

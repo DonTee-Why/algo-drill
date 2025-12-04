@@ -86,21 +86,21 @@ export default function Show({ auth, problem }: Props) {
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Description */}
-                        <Card>
+                        <Card className="overflow-hidden">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                                 Description
                             </h2>
-                            <div className="prose dark:prose-invert max-w-none">
+                            <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 overflow-wrap-break-word [&_*]:overflow-wrap-break-word [&_pre]:whitespace-pre-wrap [&_code]:whitespace-pre-wrap">
                                 <ReactMarkdown>{problem.description_md}</ReactMarkdown>
                             </div>
                         </Card>
 
                         {/* Constraints */}
-                        <Card>
+                        <Card className="overflow-hidden">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                                 Constraints
                             </h2>
-                            <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+                            <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300 overflow-wrap-break-word">
                                 {problem.constraints.map((constraint, index) => (
                                     <li key={index}>{constraint}</li>
                                 ))}
@@ -111,7 +111,7 @@ export default function Show({ auth, problem }: Props) {
                     {/* Sidebar */}
                     <div className="space-y-6">
                         {/* Language Selection */}
-                        <Card>
+                        <Card className="overflow-hidden">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                                 Language
                             </h3>
@@ -129,11 +129,11 @@ export default function Show({ auth, problem }: Props) {
 
                             {/* Function Signature */}
                             {currentSignature && (
-                                <div>
+                                <div className="overflow-hidden">
                                     <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                         Function Signature
                                     </h4>
-                                    <pre className="bg-gray-100 dark:bg-gray-900 p-3 rounded text-sm overflow-x-auto">
+                                    <pre className="bg-gray-100 dark:bg-gray-900 p-3 rounded text-sm whitespace-pre-wrap break-all">
                                         <code className="text-gray-800 dark:text-gray-200">
                                             {formatSignature(currentSignature)}
                                         </code>

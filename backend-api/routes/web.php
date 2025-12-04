@@ -6,8 +6,10 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\CoachingSessionController;
 use App\Http\Controllers\ProblemController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return view('welcome');
@@ -48,18 +50,19 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
-    
-    // User-facing problem routes
     Route::get('/problems', [ProblemController::class, 'index'])->name('problems.index');
     Route::get('/problems/{problem:slug}', [ProblemController::class, 'show'])->name('problems.show');
-
-    // AJAX endpoint to fetch problems for the dashboard modal
     Route::get('/api/problems', [ProblemController::class, 'fetchProblems'])->name('api.problems.fetch');
+
+    Route::post('/sessions', [CoachingSessionController::class, 'store'])->name('sessions.store');
+    Route::get('/sessions/{session}', function () {
+        return Inertia::render('Sessions/Show');
+    })->name('sessions.show');
 
     // Admin routes
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', function () {
-            return \Inertia\Inertia::render('Admin/Dashboard');
+            return Inertia::render('Admin/Dashboard');
         })->name('dashboard');
 
         Route::resource('problems', AdminProblemController::class)->except(['show']);
