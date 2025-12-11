@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\CoachingSession;
 use App\Models\User;
 
 class SessionPolicy
@@ -11,30 +12,32 @@ class SessionPolicy
     /**
      * Determine if the user can view the session.
      */
-    public function view(User $user, $session): bool
+    public function view(User $user, CoachingSession $session): bool
     {
-        // TODO: Implement when Session model exists
-        // return $session->user_id === $user->id;
-        return true;
+        return $session->user_id === $user->id;
     }
 
     /**
      * Determine if the user can update the session.
      */
-    public function update(User $user, $session): bool
+    public function update(User $user, CoachingSession $session): bool
     {
-        // TODO: Implement when Session model exists
-        // return $session->user_id === $user->id;
-        return true;
+        return $session->user_id === $user->id;
     }
 
     /**
      * Determine if the user can delete the session.
      */
-    public function delete(User $user, $session): bool
+    public function delete(User $user, CoachingSession $session): bool
     {
-        // TODO: Implement when Session model exists
-        // return $session->user_id === $user->id;
-        return true;
+        return $session->user_id === $user->id;
+    }
+
+    /**
+     * Determine if the user can submit to the session.
+     */
+    public function submit(User $user, CoachingSession $session): bool
+    {
+        return $session->user_id === $user->id;
     }
 }

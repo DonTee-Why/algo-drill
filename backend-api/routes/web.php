@@ -59,6 +59,8 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Sessions/Show');
     })->name('sessions.show');
 
+    Route::post('/sessions/{session}/submit', [CoachingSessionController::class, 'submit'])->name('sessions.submit');
+
     // Admin routes
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', function () {
