@@ -10,14 +10,19 @@ use App\Exceptions\InvalidSessionStateException;
 use App\Http\Requests\SubmitCoachingSessionRequest;
 use App\Models\CoachingSession;
 use App\Models\Problem;
+use App\Services\CoachingSessionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class CoachingSessionController extends Controller
 {
-    public function __construct(private SessionStateMachine $stateMachine) {}
+    public function __construct(
+        private SessionStateMachine $stateMachine,
+        private CoachingSessionService $coachingSessionService
+    ) {}
 
     public function store(Request $request): RedirectResponse
     {
@@ -25,17 +30,7 @@ class CoachingSessionController extends Controller
             'problem_id' => ['required', 'string', 'exists:problems,id'],
         ]);
 
-        $problem = Problem::query()->findOrFail($validated['problem_id']);
-
-        $session = CoachingSession::query()->create([
-            'user_id' => $request->user()->id,
-            'problem_id' => $problem->id,
-            'state' => Stage::Clarify,
-            'scores' => [],
-            'hints_used' => [],
-            'timers' => [],
-            'revealed_langs' => [],
-        ]);
+        $session = $this->coachingSessionService->startSession($request->user(), $validated['problem_id']);
 
         return redirect()->route('sessions.show', $session->id)
             ->with('success', 'Coaching session started successfully!');
@@ -48,33 +43,22 @@ class CoachingSessionController extends Controller
         $payload = $request->validated();
 
         try {
-            $stageResult = $this->stateMachine->process($session, $payload);
+            $stageResult = $this->coachingSessionService->submitSession($session, $payload);
+            return redirect()->route('sessions.show', $session->id)
+                ->with('success', 'Submission received successfully!')
+                ->with('stageResult', $stageResult);
         } catch (InvalidSessionStateException $e) {
-            Log::error('Invalid session state exception: ' . $e->getMessage(), ['error' => $e->getTrace()]);
+            return redirect()->route('sessions.show', $session->id)
+                ->with('error', $e->getMessage());
+        } catch (Throwable $e) {
             return redirect()->route('sessions.show', $session->id)
                 ->with('error', $e->getMessage());
         }
-
-        return redirect()->route('sessions.show', $session->id)
-            ->with('success', 'Submission received successfully!')
-            ->with('stageResult', $stageResult);
     }
 
     public function progress(Request $request, CoachingSession $session): JsonResponse
     {
-        return response()->json([
-            'timeline' => $session->attempts,
-            'scoresByStage' => $session->scores,
-            'hintsUsed' => $session->hints_used,
-            'metrics' => $session->metricSnapshots,
-            'reveal' => $session->reveal,
-        ]);
-    }
-
-    public function reveal(Request $request, CoachingSession $session): JsonResponse
-    {
-        return response()->json([
-            'reveal' => $session->reveal,
-        ]);
+        $progress = $this->coachingSessionService->getSessionProgress($session);
+        return response()->json($progress);
     }
 }
