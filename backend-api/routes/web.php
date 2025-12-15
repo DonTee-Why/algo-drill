@@ -54,11 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/problems/{problem:slug}', [ProblemController::class, 'show'])->name('problems.show');
     Route::get('/api/problems', [ProblemController::class, 'fetchProblems'])->name('api.problems.fetch');
 
+    Route::get('/sessions', [CoachingSessionController::class, 'index'])->name('sessions.index');
     Route::post('/sessions', [CoachingSessionController::class, 'store'])->name('sessions.store');
-    Route::get('/sessions/{session}', function () {
-        return Inertia::render('Sessions/Show');
-    })->name('sessions.show');
-
+    Route::get('/sessions/{session}', [CoachingSessionController::class, 'show'])->name('sessions.show');
     Route::post('/sessions/{session}/submit', [CoachingSessionController::class, 'submit'])->name('sessions.submit');
 
     // Admin routes

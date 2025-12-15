@@ -7,7 +7,7 @@ namespace App\Policies;
 use App\Models\CoachingSession;
 use App\Models\User;
 
-class SessionPolicy
+class CoachingSessionPolicy
 {
     /**
      * Determine if the user can view the session.

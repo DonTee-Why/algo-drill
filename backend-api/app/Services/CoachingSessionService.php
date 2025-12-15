@@ -37,15 +37,16 @@ class CoachingSessionService
     {
         try {
             $stageResult = $this->stateMachine->process($session, $payload);
+
             return $stageResult;
         } catch (InvalidSessionStateException $e) {
             Log::error(
-                'Invalid session state exception: ' . $e->getMessage(),
+                'Invalid session state exception: '.$e->getMessage(),
                 ['error' => $e->getTrace()]
             );
             throw $e;
         } catch (Exception $e) {
-            Log::error('Exception: ' . $e->getMessage(), ['error' => $e->getTrace()]);
+            Log::error('Exception: '.$e->getMessage(), ['error' => $e->getTrace()]);
             throw new Exception('An unexpected error occurred. Please try again.');
         }
     }

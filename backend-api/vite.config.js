@@ -9,4 +9,10 @@ export default defineConfig({
         input: ['resources/css/app.css', 'resources/js/app.jsx'],
         refresh: true,
     }), react(), tailwindcss(), flowbiteReact()],
+    optimizeDeps: {
+        include: ['monaco-editor'],
+    },
+    worker: {
+        format: 'es',
+    },
 });
