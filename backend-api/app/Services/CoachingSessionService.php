@@ -20,10 +20,13 @@ class CoachingSessionService
     {
         $problem = Problem::query()->findOrFail($problem_id);
 
+        $defaultLang = $user->preferred_languages[0] ?? 'javascript';
+
         $session = CoachingSession::query()->create([
             'user_id' => $user->id,
             'problem_id' => $problem->id,
             'state' => Stage::Clarify,
+            'selected_lang' => $defaultLang,
             'scores' => [],
             'hints_used' => [],
             'timers' => [],

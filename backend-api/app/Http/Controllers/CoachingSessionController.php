@@ -125,6 +125,7 @@ class CoachingSessionController extends Controller
             'session' => [
                 'id' => $session->id,
                 'state' => $session->state->value,
+                'selected_lang' => $session->selected_lang,
                 'created_at' => $session->created_at,
             ],
             'problem' => [
@@ -185,7 +186,8 @@ class CoachingSessionController extends Controller
     {
         $this->authorize('submit', $session);
 
-        $payload = $request->validated();
+        $validated = $request->validated();
+        $payload = $validated['payload'] ?? [];
 
         try {
             $stageResult = $this->coachingSessionService->submitSession($session, $payload);
@@ -207,5 +209,20 @@ class CoachingSessionController extends Controller
         $progress = $this->coachingSessionService->getSessionProgress($session);
 
         return response()->json($progress);
+    }
+
+    public function updateLanguage(Request $request, CoachingSession $session): RedirectResponse
+    {
+        $this->authorize('update', $session);
+
+        $validated = $request->validate([
+            'lang' => ['required', 'string', 'in:javascript,python,php'],
+        ]);
+
+        $session->update([
+            'selected_lang' => $validated['lang'],
+        ]);
+
+        return redirect()->back();
     }
 }

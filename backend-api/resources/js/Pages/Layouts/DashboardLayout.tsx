@@ -1,7 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { PropsWithChildren, useState, useEffect, useMemo } from 'react';
 import React from 'react';
-import { Sidebar, SidebarItems, SidebarItemGroup, Navbar, Avatar, Dropdown, DropdownHeader, DropdownItem, DropdownDivider, Select } from 'flowbite-react';
+import { Navbar, Avatar, Dropdown, DropdownHeader, DropdownItem, DropdownDivider } from 'flowbite-react';
 import { route } from 'ziggy-js';
 
 interface Props {
@@ -45,7 +45,6 @@ export default function DashboardLayout({
         }
         return 'system';
     });
-    const [preferredLang, setPreferredLang] = useState('javascript');
     
     // Determine if sidebar should show expanded (collapsed but hovering, or not collapsed)
     const showExpanded = !isCollapsed || isHovering;
@@ -106,23 +105,6 @@ export default function DashboardLayout({
                         <span className="text-sm text-gray-700 dark:text-gray-300 hidden lg:block">
                             Welcome back, {auth?.user?.name || 'User'}!
                         </span>
-                        
-                        {/* Language Selector */}
-                        <div className="hidden md:flex items-center gap-2 cursor-pointer">
-                            <Select
-                                id="headerLang"
-                                value={preferredLang}
-                                onChange={(e) => setPreferredLang(e.target.value)}
-                                sizing="sm"
-                                className="w-32 cursor-pointer"
-                            >
-                                <option value="javascript">JavaScript</option>
-                                <option value="python">Python</option>
-                                <option value="php">PHP</option>
-                                <option value="java">Java</option>
-                                <option value="cpp">C++</option>
-                            </Select>
-                        </div>
 
                         {/* Theme Selector */}
                         <Dropdown

@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $user_id
  * @property int $problem_id
  * @property Stage $state
+ * @property string $selected_lang
  * @property array|null $scores
  * @property array|null $hints_used
  * @property array|null $timers
@@ -39,6 +40,7 @@ class CoachingSession extends Model
         'user_id',
         'problem_id',
         'state',
+        'selected_lang',
         'scores',
         'hints_used',
         'timers',

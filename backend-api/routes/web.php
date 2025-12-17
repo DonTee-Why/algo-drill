@@ -53,11 +53,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/problems', [ProblemController::class, 'index'])->name('problems.index');
     Route::get('/problems/{problem:slug}', [ProblemController::class, 'show'])->name('problems.show');
     Route::get('/api/problems', [ProblemController::class, 'fetchProblems'])->name('api.problems.fetch');
-
-    Route::get('/sessions', [CoachingSessionController::class, 'index'])->name('sessions.index');
-    Route::post('/sessions', [CoachingSessionController::class, 'store'])->name('sessions.store');
-    Route::get('/sessions/{session}', [CoachingSessionController::class, 'show'])->name('sessions.show');
-    Route::post('/sessions/{session}/submit', [CoachingSessionController::class, 'submit'])->name('sessions.submit');
+    Route::prefix('sessions')->name('sessions.')
+        ->controller(CoachingSessionController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{session}', 'show')->name('show');
+            Route::post('/{session}/submit', 'submit')->name('submit');
+            Route::patch('/{session}/language', 'updateLanguage')->name('updateLanguage');
+        });
 
     // Admin routes
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {

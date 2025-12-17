@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../Layouts/DashboardLayout';
 import { Card, Button, Badge, Select, Textarea, Alert } from 'flowbite-react';
@@ -18,6 +18,7 @@ interface Props {
     session: {
         id: string;
         state: string;
+        selected_lang: string;
         created_at: string;
     };
     problem: {
@@ -100,8 +101,25 @@ export default function Show({
     latestAttempt,
     attempts,
 }: Props) {
+    const { flash } = usePage().props as { flash?: { success?: string; error?: string; message?: string } };
+    const [showFlash, setShowFlash] = useState(true);
+    
+    // Auto-dismiss flash messages after 5 seconds
+    useEffect(() => {
+        if (flash && (flash.success || flash.error || flash.message)) {
+            setShowFlash(true);
+            const timer = setTimeout(() => {
+                setShowFlash(false);
+            }, 5000);
+            
+            return () => clearTimeout(timer);
+        } else {
+            setShowFlash(false);
+        }
+    }, [flash]);
+    
     const [selectedLang, setSelectedLang] = useState<string>(
-        problem.signatures[0]?.lang || 'javascript'
+        session.selected_lang || 'javascript'
     );
     const [code, setCode] = useState<string>(
         latestAttempt?.payload?.code || getDefaultCode(problem.signatures.find(s => s.lang === selectedLang))
@@ -117,19 +135,42 @@ export default function Show({
     const isHybridStage = currentStage === 'OPTIMIZE';
 
     const { data, setData, post, processing, errors } = useForm({
-        code: code,
-        lang: selectedLang,
-        text: textInput,
-        complexityAnalysis: latestAttempt?.payload?.complexityAnalysis || '',
-        optimizationTechnique: latestAttempt?.payload?.optimizationTechnique || '',
-        tradeoffs: latestAttempt?.payload?.tradeoffs || '',
+        stage: session.state,
+        payload: {
+            code: code,
+            lang: selectedLang,
+            text: textInput,
+            complexityAnalysis: latestAttempt?.payload?.complexityAnalysis || '',
+            optimizationTechnique: latestAttempt?.payload?.optimizationTechnique || '',
+            tradeoffs: latestAttempt?.payload?.tradeoffs || '',
+        },
     });
 
     useEffect(() => {
-        setData('code', code);
-        setData('lang', selectedLang);
-        setData('text', textInput);
-    }, [code, selectedLang, textInput]);
+        setData('payload.code', code);
+        setData('payload.lang', selectedLang);
+        setData('payload.text', textInput);
+        setData('stage', session.state);
+    }, [code, selectedLang, textInput, session.state]);
+
+    // Reset inputs when session state changes (after moving to next stage)
+    useEffect(() => {
+        // If latestAttempt is null or doesn't match current stage, reset inputs
+        const shouldReset = !latestAttempt || (latestAttempt && Object.keys(latestAttempt.payload || {}).length === 0);
+        
+        if (isTextStage && shouldReset) {
+            setTextInput('');
+        }
+        if (isCodeStage && shouldReset) {
+            const sig = problem.signatures.find(s => s.lang === selectedLang);
+            setCode(getDefaultCode(sig));
+        }
+        if (isHybridStage && shouldReset) {
+            setData('payload.complexityAnalysis', '');
+            setData('payload.optimizationTechnique', '');
+            setData('payload.tradeoffs', '');
+        }
+    }, [session.state, latestAttempt]);
 
     function getDefaultCode(signature: typeof problem.signatures[0] | undefined): string {
         if (!signature) return '';
@@ -167,8 +208,43 @@ export default function Show({
         return '';
     }
 
+    function buildPayload(): Record<string, any> {
+        const payload: Record<string, any> = {};
+        
+        if (isTextStage) {
+            payload.text = textInput;
+        }
+        
+        if (isCodeStage) {
+            payload.code = code;
+            payload.lang = selectedLang;
+        }
+        
+        if (isHybridStage) {
+            payload.code = code;
+            payload.lang = selectedLang;
+            if (data.payload.complexityAnalysis) {
+                payload.complexityAnalysis = data.payload.complexityAnalysis;
+            }
+            if (data.payload.optimizationTechnique) {
+                payload.optimizationTechnique = data.payload.optimizationTechnique;
+            }
+            if (data.payload.tradeoffs) {
+                payload.tradeoffs = data.payload.tradeoffs;
+            }
+        }
+        
+        return payload;
+    }
+
     function handleRunTests() {
-        post(route('sessions.submit', session.id), {
+        // Build payload with only fields needed for current stage
+        const payload = buildPayload();
+        
+        router.post(route('sessions.submit', session.id), {
+            stage: session.state,
+            payload: payload,
+        }, {
             preserveScroll: true,
             onSuccess: () => {
                 // Test results will be updated via Inertia
@@ -177,8 +253,44 @@ export default function Show({
     }
 
     function handleSubmit() {
-        post(route('sessions.submit', session.id), {
+        const payload = buildPayload();
+        
+        router.post(route('sessions.submit', session.id), {
+            stage: session.state,
+            payload: payload,
+        }, {
             preserveScroll: true,
+            onSuccess: () => {
+                // Reset inputs after successful submission
+                if (isTextStage) {
+                    setTextInput('');
+                }
+                if (isCodeStage) {
+                    const sig = problem.signatures.find(s => s.lang === selectedLang);
+                    setCode(getDefaultCode(sig));
+                }
+                if (isHybridStage) {
+                    setData('payload.complexityAnalysis', '');
+                    setData('payload.optimizationTechnique', '');
+                    setData('payload.tradeoffs', '');
+                }
+            },
+        });
+    }
+
+    function handleLanguageChange(newLang: string) {
+        setSelectedLang(newLang);
+        const sig = problem.signatures.find(s => s.lang === newLang);
+        if (sig && !code) {
+            setCode(getDefaultCode(sig));
+        }
+        
+        // Persist language change to backend
+        router.patch(route('sessions.updateLanguage', session.id), {
+            lang: newLang,
+        }, {
+            preserveScroll: true,
+            preserveState: true,
         });
     }
 
@@ -217,6 +329,39 @@ export default function Show({
         <DashboardLayout auth={auth}>
             <Head title={`${problem.title} - Session`} />
             <div className="h-[calc(100vh-4rem)] flex gap-4 p-4 bg-gray-50 dark:bg-gray-900">
+                {/* Flash Messages */}
+                {showFlash && flash && (flash.success || flash.error || flash.message) && (
+                    <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-2xl px-4">
+                        {flash.success && (
+                            <Alert 
+                                color="success" 
+                                className="mb-4" 
+                                onDismiss={() => setShowFlash(false)}
+                            >
+                                {flash.success}
+                            </Alert>
+                        )}
+                        {flash.error && (
+                            <Alert 
+                                color="failure" 
+                                className="mb-4"
+                                onDismiss={() => setShowFlash(false)}
+                            >
+                                {flash.error}
+                            </Alert>
+                        )}
+                        {flash.message && (
+                            <Alert 
+                                color="info" 
+                                className="mb-4"
+                                onDismiss={() => setShowFlash(false)}
+                            >
+                                {flash.message}
+                            </Alert>
+                        )}
+                    </div>
+                )}
+                
                 {/* Left Panel - Problem Details & Progress */}
                 <div className="w-2/6 shrink-0 overflow-y-auto space-y-4">
                     <Card className="dark:bg-gray-800">
@@ -280,18 +425,28 @@ export default function Show({
                         </div>
 
                         <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+                            {/* Validation Errors */}
+                            {(errors.stage || errors.payload || Object.keys(errors).length > 0) && (
+                                <Alert color="failure" className="mb-4">
+                                    <div className="space-y-1">
+                                        {errors.stage && <div>Stage: {errors.stage}</div>}
+                                        {errors.payload && <div>Payload: {errors.payload}</div>}
+                                        {errors['payload.code'] && <div>Code: {errors['payload.code']}</div>}
+                                        {errors['payload.lang'] && <div>Language: {errors['payload.lang']}</div>}
+                                        {errors['payload.text'] && <div>Text: {errors['payload.text']}</div>}
+                                        {errors['payload.complexityAnalysis'] && <div>Complexity Analysis: {errors['payload.complexityAnalysis']}</div>}
+                                        {errors['payload.optimizationTechnique'] && <div>Optimization Technique: {errors['payload.optimizationTechnique']}</div>}
+                                        {errors['payload.tradeoffs'] && <div>Tradeoffs: {errors['payload.tradeoffs']}</div>}
+                                    </div>
+                                </Alert>
+                            )}
+                            
                             {isCodeStage && (
                                 <>
                                     <div className="flex items-center gap-2">
                                         <Select
                                             value={selectedLang}
-                                            onChange={(e) => {
-                                                setSelectedLang(e.target.value);
-                                                const sig = problem.signatures.find(s => s.lang === e.target.value);
-                                                if (sig && !code) {
-                                                    setCode(getDefaultCode(sig));
-                                                }
-                                            }}
+                                            onChange={(e) => handleLanguageChange(e.target.value)}
                                             className="w-40"
                                         >
                                             {problem.signatures.map((sig) => (
@@ -310,47 +465,6 @@ export default function Show({
                                             height="400px"
                                         />
                                     </div>
-
-                                    {isHybridStage && (
-                                        <div className="space-y-3">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                    Complexity Analysis
-                                                </label>
-                                                <Textarea
-                                                    value={data.complexityAnalysis}
-                                                    onChange={(e) => setData('complexityAnalysis', e.target.value)}
-                                                    rows={2}
-                                                    placeholder="Time: O(n), Space: O(1)..."
-                                                    className="dark:bg-gray-900"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                    Optimization Technique
-                                                </label>
-                                                <Textarea
-                                                    value={data.optimizationTechnique}
-                                                    onChange={(e) => setData('optimizationTechnique', e.target.value)}
-                                                    rows={2}
-                                                    placeholder="Used hash map to achieve O(n) lookup..."
-                                                    className="dark:bg-gray-900"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                    Tradeoffs
-                                                </label>
-                                                <Textarea
-                                                    value={data.tradeoffs}
-                                                    onChange={(e) => setData('tradeoffs', e.target.value)}
-                                                    rows={2}
-                                                    placeholder="Trading space for time..."
-                                                    className="dark:bg-gray-900"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
 
                                     <div className="flex gap-2">
                                         <Button
@@ -373,6 +487,47 @@ export default function Show({
                                 </>
                             )}
 
+                            {isHybridStage && (
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Complexity Analysis
+                                        </label>
+                                        <Textarea
+                                            value={data.payload.complexityAnalysis}
+                                            onChange={(e) => setData('payload.complexityAnalysis', e.target.value)}
+                                            rows={2}
+                                            placeholder="Time: O(n), Space: O(1)..."
+                                            className="dark:bg-gray-900"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Optimization Technique
+                                        </label>
+                                        <Textarea
+                                            value={data.payload.optimizationTechnique}
+                                            onChange={(e) => setData('payload.optimizationTechnique', e.target.value)}
+                                            rows={2}
+                                            placeholder="Used hash map to achieve O(n) lookup..."
+                                            className="dark:bg-gray-900"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Tradeoffs
+                                        </label>
+                                        <Textarea
+                                            value={data.payload.tradeoffs}
+                                            onChange={(e) => setData('payload.tradeoffs', e.target.value)}
+                                            rows={2}
+                                            placeholder="Trading space for time..."
+                                            className="dark:bg-gray-900"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             {isTextStage && (
                                 <>
                                     <div>
@@ -384,7 +539,7 @@ export default function Show({
                                         <Textarea
                                             value={textInput}
                                             onChange={(e) => setTextInput(e.target.value)}
-                                            rows={12}
+                                            rows={currentStage === 'PSEUDOCODE' ? 25 : 12}
                                             placeholder="Enter your response here..."
                                             className="dark:bg-gray-900"
                                         />
@@ -642,17 +797,17 @@ export default function Show({
                                                 ) : (
                                                     <XCircle className="w-3 h-3 text-red-600 dark:text-red-400" />
                                                 )}
-                                                <span className="font-medium">
+                                                <span className="font-medium text-gray-500 dark:text-gray-400">
                                                     {attempt.passed ? 'Passed' : 'Failed'} attempt at {time}
                                                 </span>
                                             </div>
                                             {attempt.coach_msg && (
-                                                <p className="text-xs opacity-75 mt-1">
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 opacity-75 mt-1">
                                                     {attempt.coach_msg}
                                                 </p>
                                             )}
                                             {attempt.rubric_scores && (
-                                                <div className="text-xs opacity-75 mt-1">
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 opacity-75 mt-1">
                                                     Score: {calculateStageScore(attempt.rubric_scores, attempt.stage)}/{STAGE_MAX_SCORES[attempt.stage] || 0}
                                                 </div>
                                             )}
