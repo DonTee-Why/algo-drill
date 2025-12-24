@@ -281,7 +281,7 @@ export default function Show({
     function handleLanguageChange(newLang: string) {
         setSelectedLang(newLang);
         const sig = problem.signatures.find(s => s.lang === newLang);
-        if (sig && !code) {
+        if (sig) {
             setCode(getDefaultCode(sig));
         }
         

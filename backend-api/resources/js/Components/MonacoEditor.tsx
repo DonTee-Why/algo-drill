@@ -106,13 +106,22 @@ export default function MonacoEditor({
             disposable.dispose();
             editor.dispose();
         };
-    }, [language, isDark, theme, readOnly]);
+    }, [isDark, theme, readOnly]);
 
     useEffect(() => {
         if (editorRef.current && editorRef.current.getValue() !== value) {
             editorRef.current.setValue(value);
         }
     }, [value]);
+
+    useEffect(() => {
+        if (editorRef.current) {
+            const model = editorRef.current.getModel();
+            if (model) {
+                monaco.editor.setModelLanguage(model, getMonacoLanguage(language));
+            }
+        }
+    }, [language]);
 
     useEffect(() => {
         if (editorRef.current) {
