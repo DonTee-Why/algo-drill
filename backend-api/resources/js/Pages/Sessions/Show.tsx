@@ -143,6 +143,16 @@ export default function Show({
     const [textInput, setTextInput] = useState<string>(
         displayedAttempt?.payload?.text || displayedAttempt?.payload?.user_input || ''
     );
+    // Clarify stage specific inputs
+    const [inputsOutputs, setInputsOutputs] = useState<string>(
+        displayedAttempt?.payload?.inputs_outputs || ''
+    );
+    const [constraints, setConstraints] = useState<string>(
+        displayedAttempt?.payload?.constraints || ''
+    );
+    const [examples, setExamples] = useState<string>(
+        displayedAttempt?.payload?.examples || ''
+    );
 
     const currentSignature = problem.signatures.find(s => s.lang === selectedLang);
     const currentStage = session.state;
@@ -158,6 +168,9 @@ export default function Show({
             code: code,
             lang: selectedLang,
             text: textInput,
+            inputs_outputs: inputsOutputs,
+            constraints: constraints,
+            examples: examples,
             complexityAnalysis: latestAttempt?.payload?.complexityAnalysis || '',
             optimizationTechnique: latestAttempt?.payload?.optimizationTechnique || '',
             tradeoffs: latestAttempt?.payload?.tradeoffs || '',
@@ -168,8 +181,11 @@ export default function Show({
         setData('payload.code', code);
         setData('payload.lang', selectedLang);
         setData('payload.text', textInput);
+        setData('payload.inputs_outputs', inputsOutputs);
+        setData('payload.constraints', constraints);
+        setData('payload.examples', examples);
         setData('stage', session.state);
-    }, [code, selectedLang, textInput, session.state]);
+    }, [code, selectedLang, textInput, inputsOutputs, constraints, examples, session.state]);
 
     // Update displayed content when viewingStage changes
     useEffect(() => {
@@ -179,7 +195,13 @@ export default function Show({
         
         if (attempt) {
             if (isTextStage) {
-                setTextInput(attempt.payload?.text || attempt.payload?.user_input || '');
+                if (activeStage === 'CLARIFY') {
+                    setInputsOutputs(attempt.payload?.inputs_outputs || '');
+                    setConstraints(attempt.payload?.constraints || '');
+                    setExamples(attempt.payload?.examples || '');
+                } else {
+                    setTextInput(attempt.payload?.text || attempt.payload?.user_input || '');
+                }
             }
             if (isCodeStage) {
                 setCode(attempt.payload?.code || getDefaultCode(problem.signatures.find(s => s.lang === selectedLang)));
@@ -187,7 +209,13 @@ export default function Show({
         } else {
             // Reset inputs if no attempt
             if (isTextStage) {
-                setTextInput('');
+                if (activeStage === 'CLARIFY') {
+                    setInputsOutputs('');
+                    setConstraints('');
+                    setExamples('');
+                } else {
+                    setTextInput('');
+                }
             }
             if (isCodeStage) {
                 const sig = problem.signatures.find(s => s.lang === selectedLang);
@@ -204,7 +232,13 @@ export default function Show({
             const shouldReset = !latestAttempt || (latestAttempt && Object.keys(latestAttempt.payload || {}).length === 0);
             
             if (isTextStage && shouldReset) {
-                setTextInput('');
+                if (currentStage === 'CLARIFY') {
+                    setInputsOutputs('');
+                    setConstraints('');
+                    setExamples('');
+                } else {
+                    setTextInput('');
+                }
             }
             if (isCodeStage && shouldReset) {
                 const sig = problem.signatures.find(s => s.lang === selectedLang);
@@ -258,7 +292,13 @@ export default function Show({
         const payload: Record<string, any> = {};
         
         if (isTextStage) {
-            payload.text = textInput;
+            if (currentStage === 'CLARIFY') {
+                payload.inputs_outputs = inputsOutputs;
+                payload.constraints = constraints;
+                payload.examples = examples;
+            } else {
+                payload.text = textInput;
+            }
         }
         
         if (isCodeStage) {
@@ -309,7 +349,13 @@ export default function Show({
             onSuccess: () => {
                 // Reset inputs after successful submission
                 if (isTextStage) {
-                    setTextInput('');
+                    if (currentStage === 'CLARIFY') {
+                        setInputsOutputs('');
+                        setConstraints('');
+                        setExamples('');
+                    } else {
+                        setTextInput('');
+                    }
                 }
                 if (isCodeStage) {
                     const sig = problem.signatures.find(s => s.lang === selectedLang);
@@ -409,7 +455,7 @@ export default function Show({
                 )}
                 
                 {/* Left Panel - Problem Details & Progress */}
-                <div className="w-2/6 shrink-0 overflow-y-auto space-y-4">
+                <div className="w-3/10 shrink-0 overflow-y-auto space-y-4">
                     <Card className="dark:bg-gray-800">
                         <div className="space-y-4">
                             <div>
@@ -501,6 +547,9 @@ export default function Show({
                                         {errors['payload.code'] && <div>Code: {errors['payload.code']}</div>}
                                         {errors['payload.lang'] && <div>Language: {errors['payload.lang']}</div>}
                                         {errors['payload.text'] && <div>Text: {errors['payload.text']}</div>}
+                                        {errors['payload.inputs_outputs'] && <div>Inputs & Outputs: {errors['payload.inputs_outputs']}</div>}
+                                        {errors['payload.constraints'] && <div>Constraints: {errors['payload.constraints']}</div>}
+                                        {errors['payload.examples'] && <div>Examples: {errors['payload.examples']}</div>}
                                         {errors['payload.complexityAnalysis'] && <div>Complexity Analysis: {errors['payload.complexityAnalysis']}</div>}
                                         {errors['payload.optimizationTechnique'] && <div>Optimization Technique: {errors['payload.optimizationTechnique']}</div>}
                                         {errors['payload.tradeoffs'] && <div>Tradeoffs: {errors['payload.tradeoffs']}</div>}
@@ -604,21 +653,64 @@ export default function Show({
 
                             {isTextStage && (
                                 <>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            {activeStage === 'CLARIFY' && 'Clarifications (inputs, outputs, constraints, examples)'}
-                                            {activeStage === 'APPROACH' && 'High-level Approach & Strategy'}
-                                            {activeStage === 'PSEUDOCODE' && 'Detailed Pseudocode'}
-                                        </label>
-                                        <Textarea
-                                            value={textInput}
-                                            onChange={(e) => setTextInput(e.target.value)}
-                                            rows={activeStage === 'PSEUDOCODE' ? 25 : 12}
-                                            placeholder="Enter your response here..."
-                                            className="dark:bg-gray-900"
-                                            readOnly={isViewingPastStage}
-                                        />
-                                    </div>
+                                    {activeStage === 'CLARIFY' ? (
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                    Inputs & Outputs
+                                                </label>
+                                                <Textarea
+                                                    value={inputsOutputs}
+                                                    onChange={(e) => setInputsOutputs(e.target.value)}
+                                                    rows={4}
+                                                    placeholder="Describe the inputs and expected outputs..."
+                                                    className="dark:bg-gray-900"
+                                                    readOnly={isViewingPastStage}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                    Constraints
+                                                </label>
+                                                <Textarea
+                                                    value={constraints}
+                                                    onChange={(e) => setConstraints(e.target.value)}
+                                                    rows={4}
+                                                    placeholder="Mention relevant constraints..."
+                                                    className="dark:bg-gray-900"
+                                                    readOnly={isViewingPastStage}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                    Examples (include at least one edge case)
+                                                </label>
+                                                <Textarea
+                                                    value={examples}
+                                                    onChange={(e) => setExamples(e.target.value)}
+                                                    rows={6}
+                                                    placeholder="Provide at least 2 examples, including 1 edge case..."
+                                                    className="dark:bg-gray-900"
+                                                    readOnly={isViewingPastStage}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                {activeStage === 'APPROACH' && 'High-level Approach & Strategy'}
+                                                {activeStage === 'PSEUDOCODE' && 'Detailed Pseudocode'}
+                                            </label>
+                                            <Textarea
+                                                value={textInput}
+                                                onChange={(e) => setTextInput(e.target.value)}
+                                                rows={activeStage === 'PSEUDOCODE' ? 25 : 12}
+                                                placeholder="Enter your response here..."
+                                                className="dark:bg-gray-900"
+                                                readOnly={isViewingPastStage}
+                                            />
+                                        </div>
+                                    )}
                                     {!isViewingPastStage && (
                                         <Button
                                             onClick={handleSubmit}
