@@ -121,6 +121,27 @@ class CoachingSessionController extends Controller
             ->where('stage', $session->state)
             ->first();
 
+        // Get latest attempt for each completed stage (for viewing past stages)
+        $stageAttempts = [];
+        foreach ($stages as $index => $stage) {
+            if ($index < $currentStageIndex) {
+                // Stage is completed, get the latest passing attempt
+                $stageAttempt = $session->attempts
+                    ->where('stage', $stage)
+                    ->sortByDesc('created_at')
+                    ->first();
+
+                if ($stageAttempt) {
+                    $stageAttempts[$stage->value] = [
+                        'payload' => $stageAttempt->payload,
+                        'coach_msg' => $stageAttempt->coach_msg,
+                        'rubric_scores' => $stageAttempt->rubric_scores,
+                        'created_at' => $stageAttempt->created_at,
+                    ];
+                }
+            }
+        }
+
         return Inertia::render('Sessions/Show', [
             'session' => [
                 'id' => $session->id,
@@ -152,6 +173,7 @@ class CoachingSessionController extends Controller
                 'rubric_scores' => $latestAttempt->rubric_scores,
                 'created_at' => $latestAttempt->created_at,
             ] : null,
+            'stageAttempts' => $stageAttempts,
             'attempts' => $session->attempts->map(function ($attempt) use ($session) {
                 // Determine if attempt passed by checking if session moved to next stage after this attempt
                 $attemptStageIndex = array_search($attempt->stage, Stage::cases());

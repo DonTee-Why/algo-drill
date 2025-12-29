@@ -156,7 +156,7 @@ export default function AdminLayout({ auth, children }: PropsWithChildren<Props>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-auto">
+            <main className="flex-1 flex flex-col overflow-auto min-h-screen">
                 {children}
             </main>
         </div>

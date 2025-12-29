@@ -65,6 +65,12 @@ interface Props {
         rubric_scores: any;
         created_at: string;
     } | null;
+    stageAttempts: Record<string, {
+        payload: any;
+        coach_msg: string | null;
+        rubric_scores: any;
+        created_at: string;
+    }>;
     attempts: Array<{
         id: string;
         stage: string;
@@ -99,10 +105,14 @@ export default function Show({
     stageProgress,
     testResults,
     latestAttempt,
+    stageAttempts,
     attempts,
 }: Props) {
     const { flash } = usePage().props as { flash?: { success?: string; error?: string; message?: string } };
     const [showFlash, setShowFlash] = useState(true);
+    
+    // Track which stage is being viewed (null means viewing current stage)
+    const [viewingStage, setViewingStage] = useState<string | null>(null);
     
     // Auto-dismiss flash messages after 5 seconds
     useEffect(() => {
@@ -121,18 +131,26 @@ export default function Show({
     const [selectedLang, setSelectedLang] = useState<string>(
         session.selected_lang || 'javascript'
     );
+    
+    // Determine which attempt to display based on viewingStage
+    const displayedAttempt = viewingStage && stageAttempts[viewingStage] 
+        ? stageAttempts[viewingStage] 
+        : latestAttempt;
+    
     const [code, setCode] = useState<string>(
-        latestAttempt?.payload?.code || getDefaultCode(problem.signatures.find(s => s.lang === selectedLang))
+        displayedAttempt?.payload?.code || getDefaultCode(problem.signatures.find(s => s.lang === selectedLang))
     );
     const [textInput, setTextInput] = useState<string>(
-        latestAttempt?.payload?.text || latestAttempt?.payload?.user_input || ''
+        displayedAttempt?.payload?.text || displayedAttempt?.payload?.user_input || ''
     );
 
     const currentSignature = problem.signatures.find(s => s.lang === selectedLang);
     const currentStage = session.state;
-    const isCodeStage = currentStage === 'BRUTE_FORCE' || currentStage === 'OPTIMIZE';
-    const isTextStage = currentStage === 'CLARIFY' || currentStage === 'APPROACH' || currentStage === 'PSEUDOCODE';
-    const isHybridStage = currentStage === 'OPTIMIZE';
+    const activeStage = viewingStage || currentStage;
+    const isCodeStage = activeStage === 'BRUTE_FORCE' || activeStage === 'OPTIMIZE';
+    const isTextStage = activeStage === 'CLARIFY' || activeStage === 'APPROACH' || activeStage === 'PSEUDOCODE';
+    const isHybridStage = activeStage === 'OPTIMIZE';
+    const isViewingPastStage = viewingStage !== null;
 
     const { data, setData, post, processing, errors } = useForm({
         stage: session.state,
@@ -153,24 +171,52 @@ export default function Show({
         setData('stage', session.state);
     }, [code, selectedLang, textInput, session.state]);
 
+    // Update displayed content when viewingStage changes
+    useEffect(() => {
+        const attempt = viewingStage && stageAttempts[viewingStage] 
+            ? stageAttempts[viewingStage] 
+            : latestAttempt;
+        
+        if (attempt) {
+            if (isTextStage) {
+                setTextInput(attempt.payload?.text || attempt.payload?.user_input || '');
+            }
+            if (isCodeStage) {
+                setCode(attempt.payload?.code || getDefaultCode(problem.signatures.find(s => s.lang === selectedLang)));
+            }
+        } else {
+            // Reset inputs if no attempt
+            if (isTextStage) {
+                setTextInput('');
+            }
+            if (isCodeStage) {
+                const sig = problem.signatures.find(s => s.lang === selectedLang);
+                setCode(getDefaultCode(sig));
+            }
+        }
+    }, [viewingStage, stageAttempts, latestAttempt, isTextStage, isCodeStage, selectedLang, problem.signatures]);
+
     // Reset inputs when session state changes (after moving to next stage)
     useEffect(() => {
-        // If latestAttempt is null or doesn't match current stage, reset inputs
-        const shouldReset = !latestAttempt || (latestAttempt && Object.keys(latestAttempt.payload || {}).length === 0);
-        
-        if (isTextStage && shouldReset) {
-            setTextInput('');
+        // Only reset if we're viewing the current stage
+        if (viewingStage === null) {
+            // If latestAttempt is null or doesn't match current stage, reset inputs
+            const shouldReset = !latestAttempt || (latestAttempt && Object.keys(latestAttempt.payload || {}).length === 0);
+            
+            if (isTextStage && shouldReset) {
+                setTextInput('');
+            }
+            if (isCodeStage && shouldReset) {
+                const sig = problem.signatures.find(s => s.lang === selectedLang);
+                setCode(getDefaultCode(sig));
+            }
+            if (isHybridStage && shouldReset) {
+                setData('payload.complexityAnalysis', '');
+                setData('payload.optimizationTechnique', '');
+                setData('payload.tradeoffs', '');
+            }
         }
-        if (isCodeStage && shouldReset) {
-            const sig = problem.signatures.find(s => s.lang === selectedLang);
-            setCode(getDefaultCode(sig));
-        }
-        if (isHybridStage && shouldReset) {
-            setData('payload.complexityAnalysis', '');
-            setData('payload.optimizationTechnique', '');
-            setData('payload.tradeoffs', '');
-        }
-    }, [session.state, latestAttempt]);
+    }, [session.state, latestAttempt, viewingStage]);
 
     function getDefaultCode(signature: typeof problem.signatures[0] | undefined): string {
         if (!signature) return '';
@@ -322,8 +368,8 @@ export default function Show({
     }
 
     const currentStageProgress = stageProgress.find(s => s.stage === currentStage);
-    const maxScore = STAGE_MAX_SCORES[currentStage] || 0;
-    const currentScore = latestAttempt ? calculateStageScore(latestAttempt.rubric_scores, currentStage) : 0;
+    const maxScore = STAGE_MAX_SCORES[activeStage] || 0;
+    const currentScore = displayedAttempt ? calculateStageScore(displayedAttempt.rubric_scores, activeStage) : 0;
 
     return (
         <DashboardLayout auth={auth}>
@@ -415,12 +461,33 @@ export default function Show({
                                         ALGODRILL SESSION
                                     </h2>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Stage: {STAGE_LABELS[currentStage] || currentStage} | Session ID: {session.id.slice(0, 13)}
+                                        {isViewingPastStage ? (
+                                            <>
+                                                Viewing: {STAGE_LABELS[viewingStage!] || viewingStage} | 
+                                                Current: {STAGE_LABELS[currentStage] || currentStage} | 
+                                                Session ID: {session.id.slice(0, 13)}
+                                            </>
+                                        ) : (
+                                            <>
+                                                Stage: {STAGE_LABELS[currentStage] || currentStage} | Session ID: {session.id.slice(0, 13)}
+                                            </>
+                                        )}
                                     </p>
                                 </div>
+                                {isViewingPastStage && (
+                                    <Button
+                                        onClick={() => setViewingStage(null)}
+                                        color="gray"
+                                        size="xs"
+                                    >
+                                        Back to Current Stage
+                                    </Button>
+                                )}
                             </div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                                Only the current stage is editable. Previous stages are locked in this demo; future stages will unlock as you submit.
+                                {isViewingPastStage 
+                                    ? 'You are viewing a past stage. Click "Back to Current Stage" to return to editing.'
+                                    : 'Only the current stage is editable. Click on completed stages to view your past submissions.'}
                             </p>
                         </div>
 
@@ -448,6 +515,7 @@ export default function Show({
                                             value={selectedLang}
                                             onChange={(e) => handleLanguageChange(e.target.value)}
                                             className="w-40"
+                                            disabled={isViewingPastStage}
                                         >
                                             {problem.signatures.map((sig) => (
                                                 <option key={sig.lang} value={sig.lang}>
@@ -463,27 +531,30 @@ export default function Show({
                                             onChange={setCode}
                                             language={selectedLang}
                                             height="400px"
+                                            readOnly={isViewingPastStage}
                                         />
                                     </div>
 
-                                    <div className="flex gap-2">
-                                        <Button
-                                            onClick={handleRunTests}
-                                            disabled={processing}
-                                            color="gray"
-                                            className="flex-1"
-                                        >
-                                            Run Tests
-                                        </Button>
-                                        <Button
-                                            onClick={handleSubmit}
-                                            disabled={processing}
-                                            color="blue"
-                                            className="flex-1"
-                                        >
-                                            Submit {STAGE_LABELS[currentStage]}
-                                        </Button>
-                                    </div>
+                                    {!isViewingPastStage && (
+                                        <div className="flex gap-2">
+                                            <Button
+                                                onClick={handleRunTests}
+                                                disabled={processing}
+                                                color="gray"
+                                                className="flex-1"
+                                            >
+                                                Run Tests
+                                            </Button>
+                                            <Button
+                                                onClick={handleSubmit}
+                                                disabled={processing}
+                                                color="blue"
+                                                className="flex-1"
+                                            >
+                                                Submit {STAGE_LABELS[currentStage]}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </>
                             )}
 
@@ -494,11 +565,12 @@ export default function Show({
                                             Complexity Analysis
                                         </label>
                                         <Textarea
-                                            value={data.payload.complexityAnalysis}
+                                            value={displayedAttempt?.payload?.complexityAnalysis || data.payload.complexityAnalysis}
                                             onChange={(e) => setData('payload.complexityAnalysis', e.target.value)}
                                             rows={2}
                                             placeholder="Time: O(n), Space: O(1)..."
                                             className="dark:bg-gray-900"
+                                            readOnly={isViewingPastStage}
                                         />
                                     </div>
                                     <div>
@@ -506,11 +578,12 @@ export default function Show({
                                             Optimization Technique
                                         </label>
                                         <Textarea
-                                            value={data.payload.optimizationTechnique}
+                                            value={displayedAttempt?.payload?.optimizationTechnique || data.payload.optimizationTechnique}
                                             onChange={(e) => setData('payload.optimizationTechnique', e.target.value)}
                                             rows={2}
                                             placeholder="Used hash map to achieve O(n) lookup..."
                                             className="dark:bg-gray-900"
+                                            readOnly={isViewingPastStage}
                                         />
                                     </div>
                                     <div>
@@ -518,11 +591,12 @@ export default function Show({
                                             Tradeoffs
                                         </label>
                                         <Textarea
-                                            value={data.payload.tradeoffs}
+                                            value={displayedAttempt?.payload?.tradeoffs || data.payload.tradeoffs}
                                             onChange={(e) => setData('payload.tradeoffs', e.target.value)}
                                             rows={2}
                                             placeholder="Trading space for time..."
                                             className="dark:bg-gray-900"
+                                            readOnly={isViewingPastStage}
                                         />
                                     </div>
                                 </div>
@@ -532,26 +606,29 @@ export default function Show({
                                 <>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            {currentStage === 'CLARIFY' && 'Clarifications (inputs, outputs, constraints, examples)'}
-                                            {currentStage === 'APPROACH' && 'High-level Approach & Strategy'}
-                                            {currentStage === 'PSEUDOCODE' && 'Detailed Pseudocode'}
+                                            {activeStage === 'CLARIFY' && 'Clarifications (inputs, outputs, constraints, examples)'}
+                                            {activeStage === 'APPROACH' && 'High-level Approach & Strategy'}
+                                            {activeStage === 'PSEUDOCODE' && 'Detailed Pseudocode'}
                                         </label>
                                         <Textarea
                                             value={textInput}
                                             onChange={(e) => setTextInput(e.target.value)}
-                                            rows={currentStage === 'PSEUDOCODE' ? 25 : 12}
+                                            rows={activeStage === 'PSEUDOCODE' ? 25 : 12}
                                             placeholder="Enter your response here..."
                                             className="dark:bg-gray-900"
+                                            readOnly={isViewingPastStage}
                                         />
                                     </div>
-                                    <Button
-                                        onClick={handleSubmit}
-                                        disabled={processing}
-                                        color="blue"
-                                        className="w-full"
-                                    >
-                                        Submit {STAGE_LABELS[currentStage]}
-                                    </Button>
+                                    {!isViewingPastStage && (
+                                        <Button
+                                            onClick={handleSubmit}
+                                            disabled={processing}
+                                            color="blue"
+                                            className="w-full"
+                                        >
+                                            Submit {STAGE_LABELS[currentStage]}
+                                        </Button>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -588,10 +665,20 @@ export default function Show({
                                 const isCompleted = stage.isCompleted;
                                 const isCurrent = stage.isCurrent;
                                 const isLocked = stage.isLocked;
+                                const isViewing = viewingStage === stage.stage;
                                 
                                 return (
                                     <div key={stage.stage} className="space-y-1">
-                                        <div className="flex items-center justify-between text-sm">
+                                        <div 
+                                            className={`flex items-center justify-between text-sm ${
+                                                isCompleted ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded p-1 -m-1' : ''
+                                            }`}
+                                            onClick={() => {
+                                                if (isCompleted) {
+                                                    setViewingStage(isViewing ? null : stage.stage);
+                                                }
+                                            }}
+                                        >
                                             <div className="flex items-center gap-2">
                                                 {isCompleted ? (
                                                     <CheckCircle className="w-4 h-4 text-green-500" />
@@ -603,11 +690,13 @@ export default function Show({
                                                     <Square className="w-4 h-4 text-gray-400" />
                                                 )}
                                                 <span className={`font-medium ${
-                                                    isCompleted ? 'text-green-600 dark:text-green-400' :
+                                                    isViewing ? 'text-green-500 dark:text-green-500' :
+                                                    isCompleted ? 'text-green-400 dark:text-green-300' :
                                                     isCurrent ? 'text-blue-600 dark:text-blue-400' :
                                                     'text-gray-500 dark:text-gray-400'
                                                 }`}>
                                                     {STAGE_LABELS[stage.stage] || stage.label}
+                                                    {isViewing && ' (viewing)'}
                                                 </span>
                                             </div>
                                             {!isLocked && (
@@ -702,50 +791,51 @@ export default function Show({
                     )}
 
                     {/* Coach Feedback */}
-                    {latestAttempt && (
+                    {displayedAttempt && (
                         <Card className="dark:bg-gray-800">
                             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                                 Coach Feedback
+                                {isViewingPastStage && ` (${STAGE_LABELS[viewingStage!]})`}
                             </h3>
                             <div className="space-y-3">
                                 <div>
                                     <span className="text-xs text-gray-500 dark:text-gray-400">Stage:</span>
                                     <Badge
-                                        color={latestAttempt.rubric_scores?.passed ? 'green' : 'red'}
+                                        color={displayedAttempt.rubric_scores?.passed ? 'green' : 'red'}
                                         className="ml-2"
                                     >
-                                        {STAGE_LABELS[currentStage]}
+                                        {STAGE_LABELS[activeStage]}
                                     </Badge>
                                     <Badge
-                                        color={latestAttempt.rubric_scores?.passed ? 'green' : 'red'}
+                                        color={displayedAttempt.rubric_scores?.passed ? 'green' : 'red'}
                                         className="ml-2"
                                     >
-                                        {latestAttempt.rubric_scores?.passed ? 'Passed' : 'Needs Work'}
+                                        {displayedAttempt.rubric_scores?.passed ? 'Passed' : 'Needs Work'}
                                     </Badge>
                                 </div>
-                                {latestAttempt.rubric_scores && (
+                                {displayedAttempt.rubric_scores && (
                                     <div>
                                         <span className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
                                             Rubric Scores:
                                         </span>
                                         <div className="space-y-1 text-xs">
-                                            {Object.entries(latestAttempt.rubric_scores).map(([key, value]) => {
+                                            {Object.entries(displayedAttempt.rubric_scores).map(([key, value]) => {
                                                 if (key === 'passed') return null;
                                                 const score = typeof value === 'number' ? value : (value as any)?.score || 0;
                                                 return (
                                                     <div key={key} className="flex justify-between">
                                                         <span className="text-gray-600 dark:text-gray-400">{key}:</span>
-                                                        <span className="font-medium">{score}</span>
+                                                        <span className="font-medium text-gray-500 dark:text-gray-500">{score}</span>
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                     </div>
                                 )}
-                                {latestAttempt.coach_msg && (
+                                {displayedAttempt.coach_msg && (
                                     <div>
                                         <p className="text-sm text-gray-700 dark:text-gray-300">
-                                            {latestAttempt.coach_msg}
+                                            {displayedAttempt.coach_msg}
                                         </p>
                                     </div>
                                 )}

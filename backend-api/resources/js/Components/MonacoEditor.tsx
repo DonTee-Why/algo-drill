@@ -106,7 +106,14 @@ export default function MonacoEditor({
             disposable.dispose();
             editor.dispose();
         };
-    }, [isDark, theme, readOnly]);
+    }, [isDark, theme]);
+
+    // Update readOnly property without recreating editor
+    useEffect(() => {
+        if (editorRef.current) {
+            editorRef.current.updateOptions({ readOnly });
+        }
+    }, [readOnly]);
 
     useEffect(() => {
         if (editorRef.current && editorRef.current.getValue() !== value) {

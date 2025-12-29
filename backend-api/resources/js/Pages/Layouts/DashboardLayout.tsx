@@ -276,8 +276,8 @@ export default function DashboardLayout({
                 </aside>
 
                 {/* Main content */}
-                <div className={`flex-1 transition-all duration-300 ease-in-out ${showExpanded ? 'md:ml-64' : 'md:ml-16'}`}>
-                    <main className={`p-4 ${isSessionPage ? 'max-w-full' : 'max-w-7xl'} mx-auto`}>
+                <div className={`flex-1 transition-all duration-300 ease-in-out ${showExpanded ? 'md:ml-64' : 'md:ml-16'} min-h-screen overflow-auto`}>
+                    <main className={`p-4 ${isSessionPage ? 'max-w-full' : 'max-w-7xl'} mx-auto mb-4`}>
                         {children}
                     </main>
                 </div>
