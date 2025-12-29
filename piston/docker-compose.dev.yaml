@@ -19,3 +19,6 @@ services:
         command: ['--no-build'] # Don't build anything
         volumes:
             - .:/piston
+networks:
+    algo-drill-network:
+        external: true

@@ -18,6 +18,10 @@ services:
       - DB_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    # dns:
+    #   - 8.8.8.8
+    #   - 8.8.4.4
+    #   - 1.1.1.1
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,6 +98,10 @@ services:
       - DB_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    # dns:
+    #   - 8.8.8.8
+    #   - 8.8.4.4
+    #   - 1.1.1.1
     volumes:
       - .:/var/www/html
       - ./storage:/var/www/html/storage
@@ -113,5 +121,6 @@ volumes:
 
 networks:
   algo-drill-network:
-    driver: bridge
+    external: true
+    name: algo-drill-network
 

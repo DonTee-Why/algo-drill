@@ -12,3 +12,10 @@ services:
             - ./data/piston/packages:/piston/packages
         tmpfs:
             - /tmp:exec
+        networks:
+            - algo-drill-network
+        platform: linux/amd64
+
+networks:
+    algo-drill-network:
+        external: true
