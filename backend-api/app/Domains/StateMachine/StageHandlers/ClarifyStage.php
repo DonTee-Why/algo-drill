@@ -2,6 +2,7 @@
 
 namespace App\Domains\StateMachine\StageHandlers;
 
+use App\Domains\Evaluator\AutoEvaluator;
 use App\Domains\StateMachine\Contracts\StageHandler;
 use App\Domains\StateMachine\DTOs\StageResult;
 use App\Enums\Stage;
@@ -18,20 +19,21 @@ class ClarifyStage implements StageHandler
      */
     public function evaluate(CoachingSession $session, array $payload): StageResult
     {
-        $rubricScores = [
-            'clarify' => [
-                'score' => 10,
-                'by' => 'auto',
-            ],
-        ];
+        $rubricScores = AutoEvaluator::clarify($payload);
+
+        // Calculate total score (max 12, pass threshold >= 7)
+        $totalScore = $rubricScores['total'];
+        $passed = $totalScore >= 7;
+
+        unset($rubricScores['total']);
+
         $testResults = [];
-        $coachMsg = null;
-        $passed = true;
+        $coachMsg = $passed ? null : 'Please provide more detail in your clarifications.';
 
         return new StageResult(
             $rubricScores,
             $passed,
-            Stage::Clarify->next(),
+            $passed ? Stage::Clarify->next() : Stage::Clarify,
             $testResults,
             $coachMsg
         );

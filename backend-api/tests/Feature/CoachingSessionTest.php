@@ -75,4 +75,86 @@ class CoachingSessionTest extends TestCase
 
         $this->assertDatabaseCount('coaching_sessions', 0);
     }
+
+    public function test_user_can_submit_clarify_stage(): void
+    {
+        $user = User::factory()->create();
+        $problem = Problem::factory()->create();
+        $session = $user->coachingSessions()->create([
+            'problem_id' => $problem->id,
+            'state' => Stage::Clarify,
+            'selected_lang' => 'javascript',
+            'scores' => [],
+            'hints_used' => [],
+            'timers' => [],
+            'revealed_langs' => [],
+        ]);
+
+        $response = $this->actingAs($user)
+            ->post(route('sessions.submit', $session->id), [
+                'stage' => Stage::Clarify->value,
+                'payload' => [
+                    'inputs_outputs' => 'Input: array of numbers, target. Output: indices of two numbers that sum to target.',
+                    'constraints' => 'Array length between 2 and 10^4. Each number is between -10^9 and 10^9.',
+                    'examples' => "Example 1: nums = [2,7,11,15], target = 9\nOutput: [0,1]\n\nExample 2 (edge case): nums = [3,3], target = 6\nOutput: [0,1]",
+                ],
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('attempts', [
+            'coaching_session_id' => $session->id,
+            'stage' => Stage::Clarify->value,
+        ]);
+
+        $session->refresh();
+        $this->assertEquals(Stage::Approach->value, $session->state->value);
+    }
+
+    public function test_user_can_progress_through_all_text_stages(): void
+    {
+        $user = User::factory()->create();
+        $problem = Problem::factory()->create();
+        $session = $user->coachingSessions()->create([
+            'problem_id' => $problem->id,
+            'state' => Stage::Clarify,
+            'selected_lang' => 'javascript',
+            'scores' => [],
+            'hints_used' => [],
+            'timers' => [],
+            'revealed_langs' => [],
+        ]);
+
+        // Submit CLARIFY
+        $this->actingAs($user)
+            ->post(route('sessions.submit', $session->id), [
+                'stage' => Stage::Clarify->value,
+                'payload' => [
+                    'inputs_outputs' => 'Input: array of numbers, target. Output: indices.',
+                    'constraints' => 'Array length between 2 and 10^4.',
+                    'examples' => "Example 1: nums = [2,7], target = 9\nExample 2 (edge case): nums = [3,3], target = 6",
+                ],
+            ]);
+        $session->refresh();
+        $this->assertEquals(Stage::Approach->value, $session->state->value);
+
+        // Submit APPROACH
+        $this->actingAs($user)
+            ->post(route('sessions.submit', $session->id), [
+                'stage' => Stage::Approach->value,
+                'payload' => ['text' => 'Test approach'],
+            ]);
+        $session->refresh();
+        $this->assertEquals(Stage::Pseudocode->value, $session->state->value);
+
+        // Submit PSEUDOCODE
+        $this->actingAs($user)
+            ->post(route('sessions.submit', $session->id), [
+                'stage' => Stage::Pseudocode->value,
+                'payload' => ['text' => 'Test pseudocode'],
+            ]);
+        $session->refresh();
+        $this->assertEquals(Stage::BruteForce->value, $session->state->value);
+    }
 }
