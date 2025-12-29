@@ -54,23 +54,30 @@ final class AutoEvaluator implements RubricEvaluator
     }
     public static function bruteForce(array $payload): array
     {
-        // Expect runner result passed into payload under `runner`
         $runner = $payload['runner'] ?? [];
 
         $compilesScore = ($runner['compiled'] ?? false) ? 3 : 0;
         $signatureScore = ($runner['signature_ok'] ?? false) ? 3 : 0;
 
-        $allPassed = ($runner['tests']['summary']['failed'] ?? 0) === 0
+        $allPassed = ($runner['tests']['summary']['failed'] ?? 1) === 0
             && ($runner['tests']['summary']['total'] ?? 0) > 0;
-
         $anyPassed = ($runner['tests']['summary']['passed'] ?? 0) > 0;
 
         $scores = [
-            'compiles' => ['score' => $compilesScore, 'by' => 'auto'],
-            'signature' => ['score' => $signatureScore, 'by' => 'auto'],
+            'compiles' => [
+                'score' => $compilesScore,
+                'by' => 'auto',
+            ],
+            'signature' => [
+                'score' => $signatureScore,
+                'by' => 'auto',
+            ],
         ];
 
-        $scores['total'] = array_sum(array_column($scores, 'score'));
+        $scores['total'] = array_sum(array_column(
+            $scores,
+            'score'
+        ));
 
         return $scores;
     }
