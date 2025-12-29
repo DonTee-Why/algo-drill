@@ -3,13 +3,23 @@
 namespace App\Domains\StateMachine\StageHandlers;
 
 use App\Domains\Evaluator\AutoEvaluator;
+use App\Domains\Evaluator\CoachEvaluator;
 use App\Domains\StateMachine\Contracts\StageHandler;
 use App\Domains\StateMachine\DTOs\StageResult;
-use App\Models\CoachingSession;
 use App\Enums\Stage;
+use App\Models\CoachingSession;
+use App\Services\TestHarnessService;
+use Exception;
+use Illuminate\Support\Facades\Log;
 
-class BruteForceStage implements StageHandler {
-    public function __construct(private AutoEvaluator $autoEvaluator) {}
+class BruteForceStage implements StageHandler
+{
+    public function __construct(
+        private AutoEvaluator $autoEvaluator,
+        private CoachEvaluator $coachEvaluator,
+        private TestHarnessService $testHarnessService
+    ) {}
+
     /**
      * Evaluate the brute force stage
      *
@@ -17,35 +27,55 @@ class BruteForceStage implements StageHandler {
      * @param array $payload
      * @return StageResult
      */
-    public function evaluate(CoachingSession $session, array $payload): StageResult {
-        // Call runnerService(Piston) to evaluate the code
-        // $runnerResult = $this->runnerService->run($payload['code'], $payload['lang']);
-        // $payload['runner'] = $runner;
+    public function evaluate(CoachingSession $session, array $payload): StageResult
+    {
+        $code = $payload['code'] ?? '';
+        $lang = $payload['lang'] ?? null;
 
-        $rubricScores = $this->autoEvaluator->evaluate(Stage::BruteForce, $payload);
-
-        // Call coachEvaluator to evaluate the code for correctness and get the coach message
-        // $coachEvaluation = $this->coachEvaluator->evaluate(Stage::BruteForce, $payload, $runnerResult);
-        // $rubricScores['correctness'] = [
-            // $coachEvaluation['score'], 'by' => 'coach'];
-        // ];
+        try {
+            $runnerResult = $this->testHarnessService->runCode($session, $lang, $code);
 
 
-        // Calculate total score (max 12, pass threshold >= 7)
-        $totalScore = $rubricScores['total'];
-        $passed = $totalScore >= 5;
+            $rubricPayload = $payload;
+            $rubricPayload['runner'] = $runnerResult;
 
-        unset($rubricScores['total']);
+            $autoEvaluation = $this->autoEvaluator->evaluate(Stage::BruteForce, $rubricPayload);
+            $coachEvaluation = $this->coachEvaluator->evaluate(Stage::BruteForce, $rubricPayload);
 
-        $testResults = [];
-        $coachMsg = $passed ? null : 'Please provide more detail in your brute force solution.';
+            $rubricScores = [
+                ...$autoEvaluation,
+                ...$coachEvaluation
+            ];
+            $totalScore = array_sum(array_column($rubricScores, 'score')) ?? 0;
 
-        return new StageResult(
-            $rubricScores,
-            $passed,
-            $passed ? Stage::BruteForce->next() : Stage::BruteForce,
-            $testResults,
-            $coachMsg
-        );
+            $allTestsGreen = ($runnerResult['tests']['summary']['failed'] ?? 1) === 0;
+            $passed = $totalScore >= 5 && $allTestsGreen;
+
+            $testResults = $runnerResult['tests'] ?? [];
+            $coachMsg = $coachEvaluation['coach_msg'] ?? ($passed ? null : 'Please provide more detail in your brute force solution.');
+
+            return new StageResult(
+                $rubricScores,
+                $passed,
+                $passed ? Stage::BruteForce->next() : Stage::BruteForce,
+                $testResults,
+                $coachMsg
+            );
+        } catch (Exception $e) {
+            Log::error(
+                'Error evaluating brute force stage: ' . $e->getMessage(),
+                [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTrace()
+                ]
+            );
+            return new StageResult(
+                [],
+                false,
+                Stage::BruteForce,
+                [],
+                'An unexpected error occurred. Please try again.'
+            );
+        }
     }
 }
