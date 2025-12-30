@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'piston' => [
+        'url' => env('PISTON_URL', 'http://piston_api:2000'),
+    ],
+
 ];
