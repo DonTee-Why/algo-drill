@@ -10,8 +10,10 @@ use App\Exceptions\InvalidSessionStateException;
 use App\Http\Requests\SubmitCoachingSessionRequest;
 use App\Models\CoachingSession;
 use App\Services\CoachingSessionService;
+use App\Services\TestHarnessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,7 +23,8 @@ class CoachingSessionController extends Controller
 {
     public function __construct(
         private SessionStateMachine $stateMachine,
-        private CoachingSessionService $coachingSessionService
+        private CoachingSessionService $coachingSessionService,
+        private TestHarnessService $testHarnessService
     ) {}
 
     public function index(Request $request): Response
@@ -246,5 +249,50 @@ class CoachingSessionController extends Controller
         ]);
 
         return redirect()->back();
+    }
+
+    public function runTests(Request $request, CoachingSession $session): JsonResponse
+    {
+        $this->authorize('view', $session);
+
+        $validated = $request->validate([
+            'code' => ['required', 'string'],
+            'lang' => ['required', 'string', 'in:javascript,python,php'],
+        ]);
+
+        try {
+            Log::debug('Running tests', [
+                'session_id' => $session->id,
+                'provided_lang' => $validated['lang'],
+                'session_selected_lang' => $session->selected_lang,
+            ]);
+
+            $runnerResult = $this->testHarnessService->runCode(
+                $session,
+                $validated['lang'],
+                $validated['code']
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'compiled' => $runnerResult['compiled'] ?? false,
+                    'signature_ok' => $runnerResult['signature_ok'] ?? false,
+                    'tests' => $runnerResult['tests'] ?? [
+                        'summary' => [
+                            'passed' => 0,
+                            'failed' => 0,
+                            'total' => 0,
+                        ],
+                        'cases' => [],
+                    ],
+                ],
+            ]);
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to run tests: '.$e->getMessage(),
+            ], 500);
+        }
     }
 }

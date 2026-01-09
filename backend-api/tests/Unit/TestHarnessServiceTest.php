@@ -397,6 +397,7 @@ JS;
             ], 200),
         ]);
 
+        // Test with isSubmission = false (default)
         $this->service->runCode($session, 'javascript', $userCode);
 
         $testRun = TestRun::where('coaching_session_id', $session->id)->first();
@@ -404,5 +405,15 @@ JS;
         $this->assertEquals(10, $testRun->cpu_ms);
         $this->assertEquals(2000, $testRun->mem_kb); // 2MB = 2000KB
         $this->assertFalse($testRun->stderr_truncated);
+        $this->assertFalse($testRun->is_submission);
+
+        // Test with isSubmission = true
+        $this->service->runCode($session, 'javascript', $userCode, isSubmission: true);
+
+        $submissionRun = TestRun::where('coaching_session_id', $session->id)
+            ->where('is_submission', true)
+            ->first();
+        $this->assertNotNull($submissionRun);
+        $this->assertTrue($submissionRun->is_submission);
     }
 }

@@ -143,6 +143,16 @@ export default function Show({
     const [textInput, setTextInput] = useState<string>(
         displayedAttempt?.payload?.text || displayedAttempt?.payload?.user_input || ''
     );
+    const [localTestResults, setLocalTestResults] = useState<typeof testResults>(testResults);
+    const [isRunningTests, setIsRunningTests] = useState(false);
+
+    // Sync localTestResults with prop when it changes (e.g., after submission)
+    useEffect(() => {
+        if (testResults) {
+            setLocalTestResults(testResults);
+        }
+    }, [testResults]);
+
     // Clarify stage specific inputs
     const [inputsOutputs, setInputsOutputs] = useState<string>(
         displayedAttempt?.payload?.inputs_outputs || ''
@@ -323,19 +333,55 @@ export default function Show({
         return payload;
     }
 
-    function handleRunTests() {
-        // Build payload with only fields needed for current stage
-        const payload = buildPayload();
-        
-        router.post(route('sessions.submit', session.id), {
-            stage: session.state,
-            payload: payload,
-        }, {
-            preserveScroll: true,
-            onSuccess: () => {
-                // Test results will be updated via Inertia
-            },
-        });
+    async function handleRunTests() {
+        if (!isCodeStage || !code.trim()) {
+            return;
+        }
+
+        setIsRunningTests(true);
+
+        try {
+            const response = await (window as any).axios.post(route('sessions.runTests', session.id), {
+                code: code,
+                lang: selectedLang,
+            });
+
+            const data = response.data;
+
+            if (data.success && data.data) {
+                console.log(data.data);
+                setLocalTestResults({
+                    summary: {
+                        passed: data.data.tests.summary.passed || 0,
+                        failed: data.data.tests.summary.failed || 0,
+                        total: data.data.tests.summary.total || 0,
+                    },
+                    cases: data.data.tests.cases || [],
+                });
+            } else {
+                console.error(data);
+                setLocalTestResults({
+                    summary: {
+                        passed: 0,
+                        failed: 0,
+                        total: 0,
+                    },
+                    cases: [],
+                });
+            }
+        } catch (error: any) {
+            console.error('Error running tests:', error);
+            setLocalTestResults({
+                summary: {
+                    passed: 0,
+                    failed: 0,
+                    total: 0,
+                },
+                cases: [],
+            });
+        } finally {
+            setIsRunningTests(false);
+        }
     }
 
     function handleSubmit() {
@@ -588,11 +634,11 @@ export default function Show({
                                         <div className="flex gap-2">
                                             <Button
                                                 onClick={handleRunTests}
-                                                disabled={processing}
+                                                disabled={processing || isRunningTests || !code.trim()}
                                                 color="gray"
                                                 className="flex-1"
                                             >
-                                                Run Tests
+                                                {isRunningTests ? 'Running...' : 'Run Tests'}
                                             </Button>
                                             <Button
                                                 onClick={handleSubmit}
@@ -837,48 +883,67 @@ export default function Show({
                         </div>
                     </Card> */}
                     {/* Test Results */}
-                    {testResults && (
+                    {(localTestResults || testResults) && (
                         <Card className="dark:bg-gray-800">
                             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                                 Test Results
                             </h3>
-                            <div className="mb-3">
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {testResults.summary.passed} passed / {testResults.summary.failed} failed
-                                </span>
-                            </div>
-                            <div className="space-y-2">
-                                {testResults.cases.map((testCase, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`p-2 rounded text-xs ${
-                                            testCase.status === 'pass'
-                                                ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
-                                                : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-2 mb-1">
-                                            {testCase.status === 'pass' ? (
-                                                <CheckCircle className="w-3 h-3" />
-                                            ) : (
-                                                <XCircle className="w-3 h-3" />
-                                            )}
-                                            <span className="font-medium">Case #{idx + 1}</span>
+                            {(() => {
+                                const results = localTestResults || testResults;
+                                if (!results) return null;
+                                return (
+                                    <>
+                                        <div className="mb-3">
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                {results.summary.passed} passed / {results.summary.failed} failed
+                                            </span>
                                         </div>
-                                        {testCase.input && (
-                                            <div className="text-xs opacity-75">
-                                                Input: {JSON.stringify(testCase.input)}
-                                            </div>
-                                        )}
-                                        {testCase.status === 'fail' && (
-                                            <div className="text-xs opacity-75 mt-1">
-                                                Expected: {JSON.stringify(testCase.expected)}<br />
-                                                Got: {JSON.stringify(testCase.got)}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                                        <div className="space-y-2">
+                                            {results.cases && results.cases.length > 0 ? (
+                                                results.cases.map((testCase: any, idx: number) => (
+                                                    <div
+                                                        key={idx}
+                                                        className={`p-2 rounded text-xs ${
+                                                            testCase.status === 'passed' || testCase.status === 'pass'
+                                                                ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
+                                                                : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            {(testCase.status === 'passed' || testCase.status === 'pass') ? (
+                                                                <CheckCircle className="w-3 h-3" />
+                                                            ) : (
+                                                                <XCircle className="w-3 h-3" />
+                                                            )}
+                                                            <span className="font-medium">Case #{idx + 1}</span>
+                                                        </div>
+                                                        {testCase.input && (
+                                                            <div className="text-xs opacity-75">
+                                                                Input: {JSON.stringify(testCase.input)}
+                                                            </div>
+                                                        )}
+                                                        {(testCase.status === 'failed' || testCase.status === 'fail') && (
+                                                            <div className="text-xs opacity-75 mt-1">
+                                                                Expected: {JSON.stringify(testCase.expected)}<br />
+                                                                Got: {JSON.stringify(testCase.got)}
+                                                            </div>
+                                                        )}
+                                                        {testCase.error && (
+                                                            <div className="text-xs opacity-75 mt-1 text-red-600 dark:text-red-400">
+                                                                Error: {testCase.error}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    No test cases run yet
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </Card>
                     )}
 
@@ -894,36 +959,17 @@ export default function Show({
                                     <span className="text-xs text-gray-500 dark:text-gray-400">Stage:</span>
                                     <Badge
                                         color={displayedAttempt.rubric_scores?.passed ? 'green' : 'red'}
-                                        className="ml-2"
+                                        className="ml-2 mb-2"
                                     >
                                         {STAGE_LABELS[activeStage]}
                                     </Badge>
                                     <Badge
                                         color={displayedAttempt.rubric_scores?.passed ? 'green' : 'red'}
-                                        className="ml-2"
+                                        className="ml-2 mb-2"
                                     >
                                         {displayedAttempt.rubric_scores?.passed ? 'Passed' : 'Needs Work'}
                                     </Badge>
                                 </div>
-                                {displayedAttempt.rubric_scores && (
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-                                            Rubric Scores:
-                                        </span>
-                                        <div className="space-y-1 text-xs">
-                                            {Object.entries(displayedAttempt.rubric_scores).map(([key, value]) => {
-                                                if (key === 'passed') return null;
-                                                const score = typeof value === 'number' ? value : (value as any)?.score || 0;
-                                                return (
-                                                    <div key={key} className="flex justify-between">
-                                                        <span className="text-gray-600 dark:text-gray-400">{key}:</span>
-                                                        <span className="font-medium text-gray-500 dark:text-gray-500">{score}</span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
                                 {displayedAttempt.coach_msg && (
                                     <div>
                                         <p className="text-sm text-gray-700 dark:text-gray-300">

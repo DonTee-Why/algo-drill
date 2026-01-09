@@ -33,8 +33,7 @@ class BruteForceStage implements StageHandler
         $lang = $payload['lang'] ?? null;
 
         try {
-            $runnerResult = $this->testHarnessService->runCode($session, $lang, $code);
-
+            $runnerResult = $this->testHarnessService->runCode($session, $lang, $code, isSubmission: true);
 
             $rubricPayload = $payload;
             $rubricPayload['runner'] = $runnerResult;
@@ -44,7 +43,7 @@ class BruteForceStage implements StageHandler
 
             $rubricScores = [
                 ...$autoEvaluation,
-                ...$coachEvaluation
+                ...$coachEvaluation,
             ];
             $totalScore = array_sum(array_column($rubricScores, 'score')) ?? 0;
 
@@ -63,12 +62,13 @@ class BruteForceStage implements StageHandler
             );
         } catch (Exception $e) {
             Log::error(
-                'Error evaluating brute force stage: ' . $e->getMessage(),
+                'Error evaluating brute force stage: '.$e->getMessage(),
                 [
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTrace()
+                    'trace' => $e->getTrace(),
                 ]
             );
+
             return new StageResult(
                 [],
                 false,

@@ -60,6 +60,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/', 'store')->name('store');
             Route::get('/{session}', 'show')->name('show');
             Route::post('/{session}/submit', 'submit')->name('submit');
+            Route::post('/{session}/run-tests', 'runTests')->name('runTests');
             Route::patch('/{session}/language', 'updateLanguage')->name('updateLanguage');
         });
 

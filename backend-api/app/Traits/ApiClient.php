@@ -58,15 +58,15 @@ trait ApiClient
                 'error' => $response->getMessage(),
                 'trace' => $response->getTrace(),
             ]);
-    
+
             return [
                 'success' => false,
-                'message' => 'API connection failed: ' . $response->getMessage(),
+                'message' => 'API connection failed: '.$response->getMessage(),
                 'data' => null,
             ];
         }
 
-        if ($response instanceof Response && $response->failed()) {
+        if ($response->failed()) {
             Log::error('API call failed', [
                 'endpoint' => $endpoint,
                 'status' => $response->status(),
@@ -94,13 +94,13 @@ trait ApiClient
             Log::error('API response parsing failed', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
-                'response_body' => $response instanceof Response ? $response->body() : null,
+                'response_body' => $response->body(),
             ]);
 
             return [
                 'success' => false,
                 'message' => 'Failed to parse API response: '.$e->getMessage(),
-                'data' => $response instanceof Response ? $response->json() : null,
+                'data' => null,
             ];
         }
     }

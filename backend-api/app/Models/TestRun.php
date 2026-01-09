@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $cpu_ms
  * @property int|null $mem_kb
  * @property bool $stderr_truncated
+ * @property bool $is_submission
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  * @property-read CoachingSession $coachingSession
@@ -37,6 +38,7 @@ class TestRun extends Model
         'cpu_ms',
         'mem_kb',
         'stderr_truncated',
+        'is_submission',
     ];
 
     protected function casts(): array
@@ -45,6 +47,7 @@ class TestRun extends Model
             'lang' => Lang::class,
             'result' => 'array',
             'stderr_truncated' => 'boolean',
+            'is_submission' => 'boolean',
         ];
     }
 

@@ -17,26 +17,52 @@ class TestHarnessService
     ) {}
 
     /**
-     * Run the brute force submission through the test harness.
+     * Run the code submission through the test harness.
+     *
+     * @param  CoachingSession  $session  The coaching session
+     * @param  string|null  $lang  The language of the code
+     * @param  string  $code  The code to run
+     * @param  bool  $isSubmission  Whether this is a formal submission (vs just running tests)
+     * @return array The result of the test harness
      */
-    public function runCode(CoachingSession $session, ?string $lang, string $code): array
+    public function runCode(CoachingSession $session, ?string $lang, string $code, bool $isSubmission = false): array
     {
         try {
-            $langEnum = $lang ? Lang::from($lang) : Lang::Javascript;
+            // Use provided lang, fallback to session's selected_lang, then default to Javascript
+            $langToUse = $lang ?? $session->selected_lang ?? 'javascript';
+
+            try {
+                $langEnum = Lang::from($langToUse);
+            } catch (\ValueError $e) {
+                Log::error('Invalid language provided to TestHarnessService', [
+                    'provided_lang' => $lang,
+                    'session_lang' => $session->selected_lang,
+                    'lang_to_use' => $langToUse,
+                ]);
+
+                return $this->createErrorResult("Invalid language: $langToUse. Supported languages: javascript, python, php");
+            }
+
             $problem = $session->problem;
 
             if (! $problem) {
                 return $this->createErrorResult('Problem not found for this session');
             }
 
-            // Load signature and tests for this language
             $signature = ProblemSignature::query()
                 ->where('problem_id', $problem->id)
                 ->where('lang', $langEnum)
                 ->first();
 
             if (! $signature) {
-                return $this->createErrorResult("No signature found for language: $lang");
+                Log::warning('No signature found for language', [
+                    'problem_id' => $problem->id,
+                    'lang' => $langEnum->value,
+                    'provided_lang' => $lang,
+                    'session_lang' => $session->selected_lang,
+                ]);
+
+                return $this->createErrorResult("No signature found for language: {$langEnum->value}");
             }
 
             $tests = ProblemTest::query()
@@ -67,8 +93,8 @@ class TestHarnessService
                 ],
                 stdin: '',
                 args: [],
-                runTimeout: 5000,
-                runCpuTime: 5000,
+                runTimeout: 3000,
+                runCpuTime: 3000,
                 runMemoryLimit: 128 * 1024 * 1024,
             );
 
@@ -114,6 +140,7 @@ class TestHarnessService
                 'cpu_ms' => $cpuMs,
                 'mem_kb' => $memKb,
                 'stderr_truncated' => $stderrTruncated,
+                'is_submission' => $isSubmission,
             ]);
 
             return [
@@ -134,6 +161,12 @@ class TestHarnessService
 
     /**
      * Generate runner code that wraps user code and runs tests
+     *
+     * @param  Lang  $lang  The language of the code
+     * @param  ProblemSignature  $signature  The signature of the problem
+     * @param  string  $userCode  The user code to run
+     * @param  $tests  The tests to run
+     * @return string The runner code
      */
     private function generateRunnerCode(Lang $lang, ProblemSignature $signature, string $userCode, $tests): string
     {
@@ -292,13 +325,54 @@ PHP;
         $functionName = $signature->function_name;
         $cases = [];
 
+        // Check if this is an in-place modification function (void return type)
+        $isVoidReturn = isset($signature->returns['type']) && $signature->returns['type'] === 'void';
+
         foreach ($tests as $index => $test) {
             $input = $this->formatValue($test->input, $lang);
             $expected = $this->formatValue($test->expected, $lang);
             $inputArgs = $this->formatInputArgs($test->input, $signature, $lang);
 
+            // Get the first param name for in-place modifications
+            $firstParamName = $signature->params[0]['name'] ?? 'arg0';
+
             if ($lang === 'javascript') {
-                $cases[] = <<<JS
+                if ($isVoidReturn) {
+                    // For in-place functions, compare the modified input array
+                    $cases[] = <<<JS
+try {
+    const {$firstParamName} = structuredClone({$input}[0]);
+    {$functionName}({$firstParamName});
+    const isEqual = deepEqual({$firstParamName}, {$expected});
+    if (isEqual) {
+        passed++;
+        results.push({
+            status: 'passed',
+            input: {$input},
+            expected: {$expected},
+            got: {$firstParamName}
+        });
+    } else {
+        failed++;
+        results.push({
+            status: 'failed',
+            input: {$input},
+            expected: {$expected},
+            got: {$firstParamName}
+        });
+    }
+} catch (error) {
+    failed++;
+    results.push({
+        status: 'error',
+        input: {$input},
+        expected: {$expected},
+        error: error.message
+    });
+}
+JS;
+                } else {
+                    $cases[] = <<<JS
 try {
     const result = {$functionName}({$inputArgs});
     const isEqual = deepEqual(result, {$expected});
@@ -329,8 +403,43 @@ try {
     });
 }
 JS;
+                }
             } elseif ($lang === 'python') {
-                $cases[] = <<<PY
+                if ($isVoidReturn) {
+                    // For in-place functions, compare the modified input
+                    $cases[] = <<<PY
+try:
+    import copy
+    {$firstParamName} = copy.deepcopy({$input}[0])
+    {$functionName}({$firstParamName})
+    is_equal = deep_equal({$firstParamName}, {$expected})
+    if is_equal:
+        passed += 1
+        results.append({
+            'status': 'passed',
+            'input': {$input},
+            'expected': {$expected},
+            'got': {$firstParamName}
+        })
+    else:
+        failed += 1
+        results.append({
+            'status': 'failed',
+            'input': {$input},
+            'expected': {$expected},
+            'got': {$firstParamName}
+        })
+except Exception as e:
+    failed += 1
+    results.append({
+        'status': 'error',
+        'input': {$input},
+        'expected': {$expected},
+        'error': str(e)
+    })
+PY;
+                } else {
+                    $cases[] = <<<PY
 try:
     result = {$functionName}({$inputArgs})
     is_equal = deep_equal(result, {$expected})
@@ -359,8 +468,44 @@ except Exception as e:
         'error': str(e)
     })
 PY;
+                }
             } else { // php
-                $cases[] = <<<PHP
+                if ($isVoidReturn) {
+                    // For in-place functions, compare the modified input
+                    $cases[] = <<<PHP
+try {
+    \${$firstParamName} = json_decode(json_encode({$input}[0]), true);
+    {$functionName}(\${$firstParamName});
+    \$is_equal = deep_equal(\${$firstParamName}, {$expected});
+    if (\$is_equal) {
+        \$passed++;
+        \$results[] = [
+            'status' => 'passed',
+            'input' => {$input},
+            'expected' => {$expected},
+            'got' => \${$firstParamName}
+        ];
+    } else {
+        \$failed++;
+        \$results[] = [
+            'status' => 'failed',
+            'input' => {$input},
+            'expected' => {$expected},
+            'got' => \${$firstParamName}
+        ];
+    }
+} catch (Exception \$e) {
+    \$failed++;
+    \$results[] = [
+        'status' => 'error',
+        'input' => {$input},
+        'expected' => {$expected},
+        'error' => \$e->getMessage()
+    ];
+}
+PHP;
+                } else {
+                    $cases[] = <<<PHP
 try {
     \$result = {$functionName}({$inputArgs});
     \$is_equal = deep_equal(\$result, {$expected});
@@ -391,6 +536,7 @@ try {
     ];
 }
 PHP;
+                }
             }
         }
 
@@ -450,7 +596,7 @@ PHP;
     private function mapLanguageToPiston(Lang $lang): string
     {
         return match ($lang) {
-            Lang::Javascript => 'javascript',
+            Lang::Javascript => 'js',
             Lang::Python => 'python',
             Lang::Php => 'php',
         };
