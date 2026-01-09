@@ -52,6 +52,20 @@ trait ApiClient
      */
     private function handleResponse(Response|Exception $response, string $endpoint): array
     {
+        if ($response instanceof Exception) {
+            Log::error('API call exception', [
+                'endpoint' => $endpoint,
+                'error' => $response->getMessage(),
+                'trace' => $response->getTrace(),
+            ]);
+    
+            return [
+                'success' => false,
+                'message' => 'API connection failed: ' . $response->getMessage(),
+                'data' => null,
+            ];
+        }
+
         if ($response instanceof Response && $response->failed()) {
             Log::error('API call failed', [
                 'endpoint' => $endpoint,
