@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array|null $timers
  * @property array|null $revealed_langs
  * @property \Illuminate\Support\Carbon|null $revealed_at
+ * @property array|null $code_drafts
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  * @property-read User $user
@@ -46,6 +47,7 @@ class CoachingSession extends Model
         'timers',
         'revealed_langs',
         'revealed_at',
+        'code_drafts',
     ];
 
     protected function casts(): array
@@ -57,6 +59,7 @@ class CoachingSession extends Model
             'timers' => 'array',
             'revealed_langs' => 'array',
             'revealed_at' => 'datetime',
+            'code_drafts' => 'array',
         ];
     }
 

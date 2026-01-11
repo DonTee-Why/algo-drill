@@ -151,6 +151,7 @@ class CoachingSessionController extends Controller
                 'state' => $session->state->value,
                 'selected_lang' => $session->selected_lang,
                 'created_at' => $session->created_at,
+                'code_drafts' => $session->code_drafts,
             ],
             'problem' => [
                 'id' => $session->problem->id,
@@ -294,5 +295,36 @@ class CoachingSessionController extends Controller
                 'message' => 'Failed to run tests: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    public function saveDraft(Request $request, CoachingSession $session): JsonResponse
+    {
+        $this->authorize('view', $session);
+
+        $validated = $request->validate([
+            'stage' => ['required', 'string'],
+            'lang' => ['required', 'string', 'in:javascript,python,php'],
+            'code' => ['required', 'string'],
+        ]);
+
+        Log::debug('saveDraft called', [
+            'session_id' => $session->id,
+            'stage' => $validated['stage'],
+            'lang' => $validated['lang'],
+            'code_length' => strlen($validated['code']),
+            'code_preview' => substr($validated['code'], 0, 100),
+        ]);
+
+        $drafts = $session->code_drafts ?? [];
+        $drafts[$validated['stage']][$validated['lang']] = $validated['code'];
+
+        $session->update(['code_drafts' => $drafts]);
+
+        Log::debug('saveDraft saved', [
+            'session_id' => $session->id,
+            'drafts_keys' => array_keys($drafts),
+        ]);
+
+        return response()->json(['success' => true]);
     }
 }

@@ -37,6 +37,19 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($key);
         });
 
+        // Piston code execution rate limiter: per user
+        RateLimiter::for('piston', function (Request $request) {
+            $userId = $request->user()?->id ?? $request->ip();
+            $sessionId = $request->route('session');
+
+            return [
+                // 30 executions per minute per user
+                Limit::perMinute(30)->by('piston:user:'.$userId),
+                // 10 executions per minute per session (prevents hammering one problem)
+                Limit::perMinute(10)->by('piston:session:'.$sessionId),
+            ];
+        });
+
         // Session reveal rate limiter: custom bucket for reveal endpoint
         RateLimiter::for('session.reveal', function (Request $request) {
             $key = $request->user()?->id ?? $request->ip();

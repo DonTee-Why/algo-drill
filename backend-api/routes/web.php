@@ -59,9 +59,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::post('/', 'store')->name('store');
             Route::get('/{session}', 'show')->name('show');
-            Route::post('/{session}/submit', 'submit')->name('submit');
-            Route::post('/{session}/run-tests', 'runTests')->name('runTests');
+            Route::post('/{session}/submit', 'submit')->middleware('throttle:piston')->name('submit');
+            Route::post('/{session}/run-tests', 'runTests')->middleware('throttle:piston')->name('runTests');
             Route::patch('/{session}/language', 'updateLanguage')->name('updateLanguage');
+            Route::post('/{session}/save-draft', 'saveDraft')->name('saveDraft');
         });
 
     // Admin routes

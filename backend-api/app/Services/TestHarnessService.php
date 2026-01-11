@@ -98,6 +98,8 @@ class TestHarnessService
                 runMemoryLimit: 128 * 1024 * 1024,
             );
 
+            Log::info('Piston response', ['response' => $response]);
+
             if (! $response['success']) {
                 Log::error('Piston execution failed', [
                     'session_id' => $session->id,
