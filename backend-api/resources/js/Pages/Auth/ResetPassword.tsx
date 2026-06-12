@@ -74,7 +74,7 @@ export default function ResetPassword({ email, token }: Props) {
                             />
                         </div>
 
-                        <Button type="submit" disabled={processing} color="blue" className="w-full">
+                        <Button type="submit" disabled={processing} color="blue" className="w-full cursor-pointer">
                             {processing ? 'Resetting...' : 'Reset Password'}
                         </Button>
                     </form>

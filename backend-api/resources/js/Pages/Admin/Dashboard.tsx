@@ -305,10 +305,10 @@ export default function Dashboard({ auth }: Props) {
                             </DropdownItem>
                         </Dropdown>
 
-                        <Button size="sm" color="gray">
+                        <Button size="sm" color="gray" className="cursor-pointer">
                             Export
                         </Button>
-                        <Button size="sm" color="blue">
+                        <Button size="sm" color="blue" className="cursor-pointer">
                             New problem
                         </Button>
                     </div>
@@ -491,6 +491,7 @@ export default function Dashboard({ auth }: Props) {
                                                             <Button
                                                                 size="xs"
                                                                 color="gray"
+                                                                className="cursor-pointer"
                                                             >
                                                                 <ChevronRight className="h-4 w-4" />
                                                             </Button>

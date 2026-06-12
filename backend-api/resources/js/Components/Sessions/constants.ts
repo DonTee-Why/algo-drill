@@ -15,3 +15,9 @@ export const STAGE_MAX_SCORES: Record<string, number> = {
     OPTIMIZE: 6,
 };
 
+export const SESSION_DIFFICULTY_BADGE_COLORS: Record<string, string> = {
+    Easy: 'green',
+    Medium: 'yellow',
+    Hard: 'red',
+};
+

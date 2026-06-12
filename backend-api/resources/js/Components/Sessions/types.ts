@@ -1,3 +1,5 @@
+import type { AuthProps } from '../../types/auth';
+
 export interface AuthUser {
     id: number;
     name: string;
@@ -80,5 +82,40 @@ export interface ShowProps {
     latestAttempt: Attempt | null;
     stageAttempts: Record<string, Attempt>;
     attempts: Attempt[];
+}
+
+export interface SessionListProblem {
+    id: string;
+    title: string;
+    slug: string;
+    difficulty: string;
+}
+
+export interface SessionListItem {
+    id: string;
+    state: string;
+    created_at: string;
+    updated_at: string;
+    problem: SessionListProblem;
+}
+
+export interface PaginatedSessions {
+    data: SessionListItem[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
+export interface SessionsIndexProps extends AuthProps {
+    sessions: PaginatedSessions;
+}
+
+export interface SessionsTableProps {
+    sessions: SessionListItem[];
+}
+
+export interface SessionsPaginationProps {
+    sessions: PaginatedSessions;
 }
 

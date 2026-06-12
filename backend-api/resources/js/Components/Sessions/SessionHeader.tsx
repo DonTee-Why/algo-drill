@@ -39,7 +39,7 @@ export default function SessionHeader({
                     </p>
                 </div>
                 {isViewingPastStage && (
-                    <Button onClick={onBackToCurrent} color="gray" size="xs">
+                    <Button onClick={onBackToCurrent} color="gray" size="xs" className="cursor-pointer">
                         Back to Current Stage
                     </Button>
                 )}

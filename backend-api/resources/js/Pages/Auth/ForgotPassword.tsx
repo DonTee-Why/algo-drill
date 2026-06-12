@@ -59,7 +59,7 @@ export default function ForgotPassword({ status }: Props) {
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <Button type="submit" disabled={processing} color="blue" className="w-full">
+                            <Button type="submit" disabled={processing} color="blue" className="w-full cursor-pointer">
                                 {processing ? 'Sending...' : 'Send Reset Link'}
                             </Button>
                         </div>
