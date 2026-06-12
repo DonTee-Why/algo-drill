@@ -10,6 +10,7 @@ services:
     volumes:
       - .:/var/www/html
       - ./storage:/var/www/html/storage
+      - /var/www/html/node_modules
     ports:
       - "80:80"
     environment:
@@ -45,7 +46,7 @@ services:
     networks:
       - algo-drill-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-algo_drill}"]
       interval: 10s
       timeout: 5s
       retries: 5
