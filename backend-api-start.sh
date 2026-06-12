@@ -56,8 +56,11 @@ EOF
 fi
 
 # Build and start containers
-echo "🔨 Building and starting containers..."
-cd backend-api && docker compose up -d --build && cd ..
+echo "🔨 Building and starting backend-api container..."
+cd backend-api && docker compose up -d && cd ..
+
+echo "🔨 Building and starting piston container..."
+cd piston && docker compose up -d && cd ..
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to be ready..."

@@ -50,8 +50,8 @@ if [ "$role" = "app" ]; then
         echo -e "${GREEN}✅ Composer dependencies already installed${NC}"
     fi
 
-    # Install Node dependencies if node_modules doesn't exist or is empty
-    if [ ! -d "node_modules" ] || [ -z "$(ls -A node_modules)" ]; then
+    # Install Node dependencies if missing or incomplete (e.g. no .bin symlinks in Docker volume)
+    if [ ! -f "node_modules/.bin/vite" ]; then
         echo -e "${YELLOW}📦 Installing Node dependencies...${NC}"
         npm install
         echo -e "${GREEN}✅ Node dependencies installed${NC}"
