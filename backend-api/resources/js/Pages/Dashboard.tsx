@@ -1,9 +1,10 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from './Layouts/DashboardLayout';
 import { Card, Progress, Button, Modal, ModalHeader, ModalBody, ModalFooter, Badge, Spinner } from 'flowbite-react';
 import axios from 'axios';
 import { route } from 'ziggy-js';
+import { STAGE_LABELS } from '../Components/Sessions/constants';
 
 interface Props {
     auth?: {
@@ -15,6 +16,7 @@ interface Props {
             preferred_languages?: string[];
         } | null;
     };
+    activeSessions: ActiveSession[];
 }
 
 interface ProgressData {
@@ -25,10 +27,16 @@ interface ProgressData {
     hintsUsed: number;
 }
 
-interface Session {
-    id: number;
-    problem: string;
-    stage: string;
+interface ActiveSession {
+    id: string;
+    state: string;
+    updated_at: string;
+    problem: {
+        id: string;
+        title: string;
+        slug: string;
+        difficulty: string;
+    };
 }
 
 interface Problem {
@@ -41,19 +49,15 @@ interface Problem {
     created_at: string;
 }
 
-export default function Dashboard({ auth }: Props) {
+export default function Dashboard({ auth, activeSessions }: Props) {
     const [showProblemModal, setShowProblemModal] = useState(false);
     const [selectedDifficulty, setSelectedDifficulty] = useState<'All' | 'Easy' | 'Medium' | 'Hard'>('All');
     const [problems, setProblems] = useState<Problem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Dummy data for progress and sessions
     const progress: ProgressData = { completed: 5, total: 12, avgScore: 2.4, timeToBF: 183, hintsUsed: 3 };
-    const activeSessions: Session[] = [
-        { id: 1, problem: 'Two Sum', stage: 'PSEUDOCODE' },
-        { id: 2, problem: 'Valid Parentheses', stage: 'BRUTE_FORCE' },
-    ];
+    const lastActiveSession = activeSessions[0] ?? null;
 
     useEffect(() => {
         if (showProblemModal) {
@@ -100,7 +104,9 @@ export default function Dashboard({ auth }: Props) {
                             Welcome back, {auth?.user?.name || 'User'}!
                 </h1>
                         <p className="text-gray-600 dark:text-gray-400">
-                            You've got an active session in progress: {activeSessions[0]?.problem || 'Two Sum'}. You can resume or start something new.
+                            {lastActiveSession
+                                ? `You've got an active session in progress: ${lastActiveSession.problem.title}. You can resume or start something new.`
+                                : 'Pick a problem to start your next guided practice session.'}
                         </p>
                     </div>
                     <Button color="blue" onClick={() => setShowProblemModal(true)} className="cursor-pointer hover:bg-blue-600 hover:text-white">
@@ -117,20 +123,33 @@ export default function Dashboard({ auth }: Props) {
                                 <h5 className="text-xl font-bold text-gray-900 dark:text-white">Continue where you left off</h5>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Jump back into your last active problem.</p>
                             </div>
-                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-3">
-                                    Last Active
-                                </p>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-semibold text-gray-900 dark:text-white mb-1">{activeSessions[0].problem}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Current stage: {activeSessions[0].stage}</p>
+                            {lastActiveSession ? (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-3">
+                                        Last Active
+                                    </p>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="font-semibold text-gray-900 dark:text-white mb-1">{lastActiveSession.problem.title}</p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                Current stage: {STAGE_LABELS[lastActiveSession.state] || lastActiveSession.state}
+                                            </p>
+                                        </div>
+                                        <Link href={route('sessions.show', lastActiveSession.id)}>
+                                            <Button size="md" color="blue" className="cursor-pointer hover:bg-blue-600 hover:text-white">
+                                                Resume
+                                            </Button>
+                                        </Link>
                                     </div>
-                                    <Button size="md" color="blue" className="cursor-pointer hover:bg-blue-600 hover:text-white">
-                                        {`Resume`}
+                                </div>
+                            ) : (
+                                <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 p-6 text-center">
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">No active sessions yet.</p>
+                                    <Button color="blue" onClick={() => setShowProblemModal(true)} className="cursor-pointer">
+                                        Start a problem
                                     </Button>
                                 </div>
-                            </div>
+                            )}
                             
                             {activeSessions.length > 1 && (
                                 <div>
@@ -144,12 +163,16 @@ export default function Dashboard({ auth }: Props) {
                                                 className="flex items-center justify-between border rounded-lg p-2 border-gray-200 dark:border-gray-700"
                                             >
                                                 <div>
-                                                    <p className="font-medium text-gray-900 dark:text-white">{session.problem}</p>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Stage: {session.stage}</p>
+                                                    <p className="font-medium text-gray-900 dark:text-white">{session.problem.title}</p>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                        Stage: {STAGE_LABELS[session.state] || session.state}
+                                                    </p>
                                                 </div>
-                                                <Button size="sm" color="light" className="text-blue-600 dark:text-blue-400 cursor-pointer">
-                                                    Resume
-                                                </Button>
+                                                <Link href={route('sessions.show', session.id)}>
+                                                    <Button size="sm" color="light" className="text-blue-600 dark:text-blue-400 cursor-pointer">
+                                                        Resume
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         ))}
                                     </div>

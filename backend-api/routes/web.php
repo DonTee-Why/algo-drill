@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CoachingSessionController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProblemController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -37,9 +38,9 @@ Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 've
 
 // Protected routes
 Route::middleware('auth')->group(function () {
-    Route::get('dashboard', function () {
-        return \Inertia\Inertia::render('Dashboard');
-    })->middleware('verified')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])
+        ->middleware('verified')
+        ->name('dashboard');
 
     // Email verification (requires auth)
     Route::get('/email/verify', [EmailVerificationController::class, 'prompt'])
