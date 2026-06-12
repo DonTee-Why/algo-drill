@@ -191,7 +191,7 @@ export default function DashboardLayout({
                 </div>
             </Navbar>
 
-            <div className="flex pt-16 h-100vh">
+            <div className="flex pt-16">
                 {/* Sidebar */}
                 <aside
                     aria-label="Sidebar navigation"
