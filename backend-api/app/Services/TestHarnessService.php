@@ -8,6 +8,7 @@ use App\Models\ProblemSignature;
 use App\Models\ProblemTest;
 use App\Models\TestRun;
 use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class TestHarnessService
@@ -170,7 +171,7 @@ class TestHarnessService
      * @param  $tests  The tests to run
      * @return string The runner code
      */
-    private function generateRunnerCode(Lang $lang, ProblemSignature $signature, string $userCode, $tests): string
+    private function generateRunnerCode(Lang $lang, ProblemSignature $signature, string $userCode, array|Collection $tests): string
     {
         return match ($lang) {
             Lang::Javascript => $this->generateJavaScriptRunner($signature, $userCode, $tests),
@@ -179,7 +180,7 @@ class TestHarnessService
         };
     }
 
-    private function generateJavaScriptRunner(ProblemSignature $signature, string $userCode, $tests): string
+    private function generateJavaScriptRunner(ProblemSignature $signature, string $userCode, array|Collection $tests): string
     {
         $functionName = $signature->function_name;
         $testCases = $this->generateTestCases($signature, $tests, 'javascript');
@@ -232,7 +233,7 @@ console.log(JSON.stringify({
 JS;
     }
 
-    private function generatePythonRunner(ProblemSignature $signature, string $userCode, $tests): string
+    private function generatePythonRunner(ProblemSignature $signature, string $userCode, array|Collection $tests): string
     {
         $functionName = $signature->function_name;
         $testCases = $this->generateTestCases($signature, $tests, 'python');
@@ -277,7 +278,7 @@ print(json.dumps({
 PY;
     }
 
-    private function generatePhpRunner(ProblemSignature $signature, string $userCode, $tests): string
+    private function generatePhpRunner(ProblemSignature $signature, string $userCode, array|Collection $tests): string
     {
         $functionName = $signature->function_name;
         $testCases = $this->generateTestCases($signature, $tests, 'php');
@@ -322,7 +323,7 @@ echo json_encode([
 PHP;
     }
 
-    private function generateTestCases(ProblemSignature $signature, $tests, string $lang): string
+    private function generateTestCases(ProblemSignature $signature, array|Collection $tests, string $lang): string
     {
         $functionName = $signature->function_name;
         $cases = [];
@@ -545,7 +546,7 @@ PHP;
         return implode("\n\n", $cases);
     }
 
-    private function formatValue($value, string $lang): string
+    private function formatValue(mixed $value, string $lang): string
     {
         $json = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
@@ -562,7 +563,7 @@ PHP;
         return $json;
     }
 
-    private function formatInputArgs($input, ProblemSignature $signature, string $lang): string
+    private function formatInputArgs(mixed $input, ProblemSignature $signature, string $lang): string
     {
         if (is_array($input)) {
             if (array_is_list($input)) {
@@ -613,7 +614,7 @@ PHP;
         };
     }
 
-    private function parseRunnerOutput(array $pistonData, $tests): array
+    private function parseRunnerOutput(array $pistonData, Collection $tests): array
     {
         $stdout = $pistonData['run']['stdout'] ?? '';
         $stderr = $pistonData['run']['stderr'] ?? '';
