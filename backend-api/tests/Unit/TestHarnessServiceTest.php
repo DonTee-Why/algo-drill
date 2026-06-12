@@ -11,7 +11,7 @@ use App\Models\ProblemSignature;
 use App\Models\ProblemTest;
 use App\Models\TestRun;
 use App\Models\User;
-use App\Services\PistonClient;
+use App\Runner\CodeRunnerEngine;
 use App\Services\TestHarnessService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -23,13 +23,10 @@ class TestHarnessServiceTest extends TestCase
 
     private TestHarnessService $service;
 
-    private PistonClient $pistonClient;
-
     protected function setUp(): void
     {
         parent::setUp();
-        $this->pistonClient = new PistonClient;
-        $this->service = new TestHarnessService($this->pistonClient);
+        $this->service = new TestHarnessService(app(CodeRunnerEngine::class));
     }
 
     public function test_run_code_success_with_javascript(): void

@@ -274,6 +274,8 @@ class CoachingSessionController extends Controller
                 $validated['code']
             );
 
+            Log::debug('Runner result', ['runner_result' => $runnerResult]);
+
             return response()->json([
                 'success' => true,
                 'data' => [
