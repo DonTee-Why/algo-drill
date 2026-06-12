@@ -348,7 +348,7 @@ export default function Show({
                     </div>
                 </div>
 
-                <div className="w-80 shrink-0 overflow-y-auto space-y-4">
+                <div className="w-80 shrink-0 scrollbar-none overflow-y-auto space-y-4">
                     <StageProgress
                         stageProgress={stageProgress}
                         viewingStage={viewingStage}
