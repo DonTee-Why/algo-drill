@@ -14,19 +14,21 @@ use Illuminate\Support\Facades\Log;
 class ClarifyStage implements StageHandler
 {
     public const PASS_THRESHOLD = 7;
+
     public const MIN_AUTO_EVALUATOR_SCORE = 4;
+
+    public function __construct(
+        private AutoEvaluator $autoEvaluator,
+        private CoachEvaluator $coachEvaluator,
+    ) {}
 
     /**
      * Evaluate the clarify stage
-     *
-     * @param CoachingSession $session
-     * @param array $payload
-     * @return StageResult
      */
     public function evaluate(CoachingSession $session, array $payload): StageResult
     {
         try {
-            $autoEvaluatorScores = AutoEvaluator::clarify($payload);
+            $autoEvaluatorScores = $this->autoEvaluator->evaluate(Stage::Clarify, $payload, $session);
             $autoEvaluatorTotal = (int) array_sum(array_column(
                 $autoEvaluatorScores,
                 'score'
@@ -46,7 +48,7 @@ class ClarifyStage implements StageHandler
                 );
             }
 
-            $coachEvaluatorScores = CoachEvaluator::clarify($payload, $session);
+            $coachEvaluatorScores = $this->coachEvaluator->evaluate(Stage::Clarify, $payload, $session);
             $coachEvaluatorTotal = array_sum(array_column(
                 $coachEvaluatorScores,
                 'score'

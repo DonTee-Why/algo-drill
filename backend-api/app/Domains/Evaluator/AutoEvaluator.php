@@ -20,7 +20,7 @@ final class AutoEvaluator implements RubricEvaluator
         };
     }
 
-    public static function clarify(array $payload): array
+    private function clarify(array $payload): array
     {
         $scores = [
             'inputs_outputs' => [
@@ -40,15 +40,17 @@ final class AutoEvaluator implements RubricEvaluator
         return $scores;
     }
 
-    private static function approach(array $payload): array
+    private function approach(array $payload): array
     {
         return [];
     }
-    private static function pseudocode(array $payload): array
+
+    private function pseudocode(array $payload): array
     {
         return [];
     }
-    public static function bruteForce(array $payload): array
+
+    private function bruteForce(array $payload): array
     {
         $runner = $payload['runner'] ?? [];
 
@@ -77,11 +79,13 @@ final class AutoEvaluator implements RubricEvaluator
 
         return $scores;
     }
-    public static function optimize(array $payload): array
+
+    private function optimize(array $payload): array
     {
         return [];
     }
-    public static function done(array $payload): array
+
+    private function done(array $payload): array
     {
         return [];
     }
@@ -89,9 +93,6 @@ final class AutoEvaluator implements RubricEvaluator
     /**
      * Score text presence (0-3)
      * 0: empty, 1: very short/weak, 2: moderate, 3: good length and content
-     *
-     * @param string $text
-     * @return int
      */
     private static function scoreTextPresence(string $text): int
     {
@@ -106,9 +107,6 @@ final class AutoEvaluator implements RubricEvaluator
     /**
      * Score examples (0-6)
      * Checks for presence, count (>=2 examples), and edge case mention
-     * 
-     * @param string $examples
-     * @return int
      */
     private static function scoreExamples(string $examples): int
     {
@@ -134,9 +132,6 @@ final class AutoEvaluator implements RubricEvaluator
 
     /**
      * Count the number of examples in the text
-     *
-     * @param string $text
-     * @return int
      */
     private static function countExamples(string $text): int
     {
@@ -158,7 +153,7 @@ final class AutoEvaluator implements RubricEvaluator
         // If no clear pattern, estimate based on line breaks or semicolons
         if ($maxCount === 0) {
             $lines = explode("\n", $text);
-            $nonEmptyLines = array_filter($lines, fn($line) => ! empty(trim($line)));
+            $nonEmptyLines = array_filter($lines, fn ($line) => ! empty(trim($line)));
             $maxCount = min(\count($nonEmptyLines), 3); // Cap at 3 for estimation
         }
 

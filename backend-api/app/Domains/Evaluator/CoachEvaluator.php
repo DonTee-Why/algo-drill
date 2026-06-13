@@ -18,7 +18,7 @@ class CoachEvaluator implements RubricEvaluator
         };
     }
 
-    public static function clarify(array $payload, CoachingSession $session): array
+    private function clarify(array $payload, CoachingSession $session): array
     {
         $scores = [
             'correctness' => [
@@ -30,7 +30,7 @@ class CoachEvaluator implements RubricEvaluator
         return $scores;
     }
 
-    private static function bruteForce(array $payload): array
+    private function bruteForce(array $payload): array
     {
         $runner = $payload['runner'] ?? [];
 
@@ -47,12 +47,12 @@ class CoachEvaluator implements RubricEvaluator
         return $scores;
     }
 
-    private static function optimize(array $payload): array
+    private function optimize(array $payload): array
     {
         return [];
     }
 
-    private static function done(array $payload): array
+    private function done(array $payload): array
     {
         return [];
     }
