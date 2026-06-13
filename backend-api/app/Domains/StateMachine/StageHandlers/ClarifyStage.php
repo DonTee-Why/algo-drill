@@ -3,6 +3,7 @@
 namespace App\Domains\StateMachine\StageHandlers;
 
 use App\Domains\Evaluator\AutoEvaluator;
+use App\Domains\Evaluator\CoachEvaluator;
 use App\Domains\StateMachine\Contracts\StageHandler;
 use App\Domains\StateMachine\DTOs\StageResult;
 use App\Enums\Stage;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 class ClarifyStage implements StageHandler
 {
     public const PASS_THRESHOLD = 7;
+    public const MIN_AUTO_EVALUATOR_SCORE = 4;
 
     /**
      * Evaluate the clarify stage
@@ -24,13 +26,35 @@ class ClarifyStage implements StageHandler
     public function evaluate(CoachingSession $session, array $payload): StageResult
     {
         try {
-            $rubricScores = AutoEvaluator::clarify($payload);
+            $autoEvaluatorScores = AutoEvaluator::clarify($payload);
+            $autoEvaluatorTotal = (int) array_sum(array_column(
+                $autoEvaluatorScores,
+                'score'
+            ));
+
+            if ($autoEvaluatorTotal < self::MIN_AUTO_EVALUATOR_SCORE) {
+                return new StageResult(
+                    stage: Stage::Clarify,
+                    evaluator: 'auto',
+                    rubricScores: $autoEvaluatorScores,
+                    totalScore: '0',
+                    passThreshold: (string) self::PASS_THRESHOLD,
+                    passed: false,
+                    nextState: Stage::Clarify,
+                    testResults: [],
+                    coachMsg: 'Your clarifications are not detailed enough. Please provide more detail.',
+                );
+            }
+
+            $coachEvaluatorScores = CoachEvaluator::clarify($payload, $session);
+            $coachEvaluatorTotal = array_sum(array_column(
+                $coachEvaluatorScores,
+                'score'
+            ));
 
             // Calculate total score (max 12, pass threshold >= 7)
-            $totalScore = $rubricScores['total'];
+            $totalScore = $autoEvaluatorTotal + $coachEvaluatorTotal;
             $passed = $totalScore >= self::PASS_THRESHOLD;
-
-            unset($rubricScores['total']);
 
             $testResults = [];
             $coachMsg = $passed ? null : 'Please provide more detail in your clarifications.';
@@ -38,7 +62,10 @@ class ClarifyStage implements StageHandler
             return new StageResult(
                 stage: Stage::Clarify,
                 evaluator: 'auto',
-                rubricScores: $rubricScores,
+                rubricScores: [
+                    ...$autoEvaluatorScores,
+                    ...$coachEvaluatorScores,
+                ],
                 totalScore: (string) $totalScore,
                 passThreshold: (string) self::PASS_THRESHOLD,
                 passed: $passed,

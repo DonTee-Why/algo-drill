@@ -36,8 +36,8 @@ class BruteForceStage implements StageHandler
             $rubricPayload = $payload;
             $rubricPayload['runner'] = $runnerResult;
 
-            $autoEvaluation = $this->autoEvaluator->evaluate(Stage::BruteForce, $rubricPayload);
-            $coachEvaluation = $this->coachEvaluator->evaluate(Stage::BruteForce, $rubricPayload);
+            $autoEvaluation = $this->autoEvaluator->evaluate(Stage::BruteForce, $rubricPayload, $session);
+            $coachEvaluation = $this->coachEvaluator->evaluate(Stage::BruteForce, $rubricPayload, $session);
 
             $rubricScores = [
                 ...$autoEvaluation,

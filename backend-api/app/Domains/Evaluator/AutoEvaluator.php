@@ -4,10 +4,11 @@ namespace App\Domains\Evaluator;
 
 use App\Domains\Evaluator\Contracts\RubricEvaluator;
 use App\Enums\Stage;
+use App\Models\CoachingSession;
 
 final class AutoEvaluator implements RubricEvaluator
 {
-    public function evaluate(Stage $stage, array $payload): array
+    public function evaluate(Stage $stage, array $payload, CoachingSession $session): array
     {
         return match ($stage) {
             Stage::Clarify => $this->clarify($payload),
@@ -35,11 +36,6 @@ final class AutoEvaluator implements RubricEvaluator
                 'by' => 'auto',
             ],
         ];
-
-        $scores['total'] = array_sum(array_column(
-            $scores,
-            'score'
-        ));
 
         return $scores;
     }
@@ -99,19 +95,12 @@ final class AutoEvaluator implements RubricEvaluator
      */
     private static function scoreTextPresence(string $text): int
     {
-        if (empty($text)) {
-            return 0;
-        }
-
         $length = \strlen($text);
-        if ($length < 10) {
+        if ($length >= 10) {
             return 1;
         }
-        if ($length < 30) {
-            return 2;
-        }
 
-        return 3;
+        return 0;
     }
 
     /**
@@ -131,32 +120,13 @@ final class AutoEvaluator implements RubricEvaluator
 
         // Basic presence (0-2)
         $length = \strlen($examples);
-        if ($length >= 30) {
-            $score += 2;
-        } elseif ($length >= 10) {
-            $score += 1;
-        }
-
         // Count examples (look for patterns like "Example 1", "Example 2", or numbered lists)
         $exampleCount = self::countExamples($examples);
-        if ($exampleCount >= 2) {
+
+        if ($exampleCount >= 2 || $length >= 30) {
             $score += 2;
-        } elseif ($exampleCount >= 1) {
+        } elseif ($exampleCount >= 1 || $length >= 10) {
             $score += 1;
-        }
-
-        // Edge case mention (0-2)
-        $edgeCaseKeywords = ['edge', 'corner', 'empty', 'null', 'zero', 'negative', 'boundary', 'extreme', 'special'];
-        $hasEdgeCase = false;
-        foreach ($edgeCaseKeywords as $keyword) {
-            if (stripos($examples, $keyword) !== false) {
-                $hasEdgeCase = true;
-                break;
-            }
-        }
-
-        if ($hasEdgeCase) {
-            $score += 2;
         }
 
         return min($score, 6);
