@@ -11,10 +11,6 @@ class OptimizeStage implements StageHandler
 {
     /**
      * Evaluate the optimize stage
-     *
-     * @param CoachingSession $session
-     * @param array $payload
-     * @return StageResult
      */
     public function evaluate(CoachingSession $session, array $payload): StageResult
     {
@@ -29,11 +25,15 @@ class OptimizeStage implements StageHandler
         $passed = true;
 
         return new StageResult(
-            $rubricScores,
-            $passed,
-            Stage::Optimize->next(),
-            $testResults,
-            $coachMsg
+            stage: Stage::Optimize,
+            evaluator: 'auto',
+            rubricScores: $rubricScores,
+            totalScore: '10',
+            passThreshold: '0',
+            passed: $passed,
+            nextState: Stage::Optimize->next(),
+            testResults: $testResults,
+            coachMsg: $coachMsg,
         );
     }
 }

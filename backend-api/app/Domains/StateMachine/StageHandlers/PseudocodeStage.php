@@ -11,10 +11,6 @@ class PseudocodeStage implements StageHandler
 {
     /**
      * Evaluate the pseudocode stage
-     *
-     * @param CoachingSession $session
-     * @param array $payload
-     * @return StageResult
      */
     public function evaluate(CoachingSession $session, array $payload): StageResult
     {
@@ -29,11 +25,15 @@ class PseudocodeStage implements StageHandler
         $passed = true;
 
         return new StageResult(
-            $rubricScores,
-            $passed,
-            Stage::Pseudocode->next(),
-            $testResults,
-            $coachMsg
+            stage: Stage::Pseudocode,
+            evaluator: 'auto',
+            rubricScores: $rubricScores,
+            totalScore: '10',
+            passThreshold: '0',
+            passed: $passed,
+            nextState: Stage::Pseudocode->next(),
+            testResults: $testResults,
+            coachMsg: $coachMsg,
         );
     }
 }

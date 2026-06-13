@@ -11,10 +11,6 @@ class DoneStage implements StageHandler
 {
     /**
      * Evaluate the done stage
-     *
-     * @param CoachingSession $session
-     * @param array $payload
-     * @return StageResult
      */
     public function evaluate(CoachingSession $session, array $payload): StageResult
     {
@@ -29,11 +25,15 @@ class DoneStage implements StageHandler
         $passed = true;
 
         return new StageResult(
-            $rubricScores,
-            $passed,
-            Stage::Done->next(),
-            $testResults,
-            $coachMsg
+            stage: Stage::Done,
+            evaluator: 'auto',
+            rubricScores: $rubricScores,
+            totalScore: '10',
+            passThreshold: '0',
+            passed: $passed,
+            nextState: Stage::Done->next(),
+            testResults: $testResults,
+            coachMsg: $coachMsg,
         );
     }
 }

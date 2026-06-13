@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 
 class BruteForceStage implements StageHandler
 {
+    public const PASS_THRESHOLD = 5;
+
     public function __construct(
         private AutoEvaluator $autoEvaluator,
         private CoachEvaluator $coachEvaluator,
@@ -22,10 +24,6 @@ class BruteForceStage implements StageHandler
 
     /**
      * Evaluate the brute force stage
-     *
-     * @param CoachingSession $session
-     * @param array $payload
-     * @return StageResult
      */
     public function evaluate(CoachingSession $session, array $payload): StageResult
     {
@@ -48,17 +46,21 @@ class BruteForceStage implements StageHandler
             $totalScore = array_sum(array_column($rubricScores, 'score')) ?? 0;
 
             $allTestsGreen = ($runnerResult['tests']['summary']['failed'] ?? 1) === 0;
-            $passed = $totalScore >= 5 && $allTestsGreen;
+            $passed = $totalScore >= self::PASS_THRESHOLD && $allTestsGreen;
 
             $testResults = $runnerResult['tests'] ?? [];
             $coachMsg = $coachEvaluation['coach_msg'] ?? ($passed ? null : 'Please provide more detail in your brute force solution.');
 
             return new StageResult(
-                $rubricScores,
-                $passed,
-                $passed ? Stage::BruteForce->next() : Stage::BruteForce,
-                $testResults,
-                $coachMsg
+                stage: Stage::BruteForce,
+                evaluator: 'auto+coach',
+                rubricScores: $rubricScores,
+                totalScore: (string) $totalScore,
+                passThreshold: (string) self::PASS_THRESHOLD,
+                passed: $passed,
+                nextState: $passed ? Stage::BruteForce->next() : Stage::BruteForce,
+                testResults: $testResults,
+                coachMsg: $coachMsg,
             );
         } catch (Exception $e) {
             Log::error(
@@ -70,11 +72,15 @@ class BruteForceStage implements StageHandler
             );
 
             return new StageResult(
-                [],
-                false,
-                Stage::BruteForce,
-                [],
-                'An unexpected error occurred. Please try again.'
+                stage: Stage::BruteForce,
+                evaluator: 'auto+coach',
+                rubricScores: [],
+                totalScore: '0',
+                passThreshold: (string) self::PASS_THRESHOLD,
+                passed: false,
+                nextState: Stage::BruteForce,
+                testResults: [],
+                coachMsg: 'An unexpected error occurred. Please try again.',
             );
         }
     }

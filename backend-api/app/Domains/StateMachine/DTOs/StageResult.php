@@ -4,12 +4,17 @@ namespace App\Domains\StateMachine\DTOs;
 
 use App\Enums\Stage;
 
-final class StageResult {
+final class StageResult
+{
     public function __construct(
+        public ?Stage $stage,
+        public string $evaluator,
         public array $rubricScores,
-        public bool  $passed,
+        public string $totalScore,
+        public string $passThreshold,
+        public bool $passed,
         public ?Stage $nextState,
         public ?array $testResults = null,
-        public ?string $coachMsg = null
+        public ?string $coachMsg = null,
     ) {}
 }

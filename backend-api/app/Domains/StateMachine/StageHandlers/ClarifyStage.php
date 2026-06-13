@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 
 class ClarifyStage implements StageHandler
 {
+    public const PASS_THRESHOLD = 7;
+
     /**
      * Evaluate the clarify stage
      *
@@ -26,7 +28,7 @@ class ClarifyStage implements StageHandler
 
             // Calculate total score (max 12, pass threshold >= 7)
             $totalScore = $rubricScores['total'];
-            $passed = $totalScore >= 7;
+            $passed = $totalScore >= self::PASS_THRESHOLD;
 
             unset($rubricScores['total']);
 
@@ -34,26 +36,35 @@ class ClarifyStage implements StageHandler
             $coachMsg = $passed ? null : 'Please provide more detail in your clarifications.';
 
             return new StageResult(
-                $rubricScores,
-                $passed,
-                $passed ? Stage::Clarify->next() : Stage::Clarify,
-                $testResults,
-                $coachMsg
+                stage: Stage::Clarify,
+                evaluator: 'auto',
+                rubricScores: $rubricScores,
+                totalScore: (string) $totalScore,
+                passThreshold: (string) self::PASS_THRESHOLD,
+                passed: $passed,
+                nextState: $passed ? Stage::Clarify->next() : Stage::Clarify,
+                testResults: $testResults,
+                coachMsg: $coachMsg,
             );
         } catch (Exception $e) {
             Log::error(
-                'Error evaluating clarify stage: ' . $e->getMessage(),
+                'Error evaluating clarify stage: '.$e->getMessage(),
                 [
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTrace()
+                    'trace' => $e->getTrace(),
                 ]
             );
+
             return new StageResult(
-                [],
-                false,
-                Stage::Clarify,
-                [],
-                'An unexpected error occurred. Please try again.'
+                stage: Stage::Clarify,
+                evaluator: 'auto',
+                rubricScores: [],
+                totalScore: '0',
+                passThreshold: (string) self::PASS_THRESHOLD,
+                passed: false,
+                nextState: Stage::Clarify,
+                testResults: [],
+                coachMsg: 'An unexpected error occurred. Please try again.',
             );
         }
     }

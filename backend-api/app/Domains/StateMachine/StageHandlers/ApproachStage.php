@@ -11,10 +11,6 @@ class ApproachStage implements StageHandler
 {
     /**
      * Evaluate the approach stage
-     *
-     * @param CoachingSession $session
-     * @param array $payload
-     * @return StageResult
      */
     public function evaluate(CoachingSession $session, array $payload): StageResult
     {
@@ -29,11 +25,15 @@ class ApproachStage implements StageHandler
         $passed = true;
 
         return new StageResult(
-            $rubricScores,
-            $passed,
-            Stage::Approach->next(),
-            $testResults,
-            $coachMsg
+            stage: Stage::Approach,
+            evaluator: 'auto',
+            rubricScores: $rubricScores,
+            totalScore: '10',
+            passThreshold: '0',
+            passed: $passed,
+            nextState: Stage::Approach->next(),
+            testResults: $testResults,
+            coachMsg: $coachMsg,
         );
     }
 }
