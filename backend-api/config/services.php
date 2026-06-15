@@ -39,4 +39,9 @@ return [
         'url' => env('PISTON_URL', 'http://piston_api:2000'),
     ],
 
+    'coach' => [
+        'url' => env('COACH_URL', 'http://coach:8000'),
+        'timeout' => (int) env('COACH_TIMEOUT', 60),
+    ],
+
 ];

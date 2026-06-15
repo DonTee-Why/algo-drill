@@ -1,59 +1,101 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domains\Evaluator;
 
+use App\Domains\Coach\Builders\CoachCritiqueRequestBuilder;
+use App\Domains\Coach\DTOs\CoachCritiqueResult;
 use App\Domains\Evaluator\Contracts\RubricEvaluator;
 use App\Enums\Stage;
 use App\Models\CoachingSession;
+use App\Services\CoachClient;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CoachEvaluator implements RubricEvaluator
 {
-    public function evaluate(Stage $stage, array $payload, CoachingSession $session): array
+    public function __construct(
+        private CoachClient $coachClient,
+        private CoachCritiqueRequestBuilder $requestBuilder,
+    ) {}
+
+    /**
+     * Request a qualitative critique from the coach sidecar for the given stage.
+     *
+     * The per-stage request shape is owned by the request builder; this method is
+     * stage-agnostic and simply builds, calls, and maps the response.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function evaluate(Stage $stage, array $payload, CoachingSession $session): CoachCritiqueResult
     {
-        return match ($stage) {
-            Stage::Clarify => $this->clarify($payload, $session),
-            Stage::BruteForce => $this->bruteForce($payload),
-            Stage::Optimize => $this->optimize($payload),
-            Stage::Done => $this->done($payload),
-        };
+        try {
+            $requestPayload = $this->requestBuilder->build($session, $stage, $payload);
+            $response = $this->coachClient->critique($requestPayload);
+
+            if (! ($response['success'] ?? false)) {
+                Log::warning('Coach critique request failed', [
+                    'session_id' => $session->id,
+                    'stage' => $stage->value,
+                    'message' => $response['message'] ?? 'Unknown coach error',
+                ]);
+
+                return $this->unavailableResult();
+            }
+
+            $data = \is_array($response['data'] ?? null) ? $response['data'] : [];
+
+            return new CoachCritiqueResult(
+                scores: $this->mapScores($data['scores'] ?? []),
+                coachMsg: $data['coach_msg'] ?? null,
+                flags: \is_array($data['flags'] ?? null) ? $data['flags'] : [],
+                questions: \is_array($data['questions'] ?? null) ? array_values($data['questions']) : [],
+                available: true,
+            );
+        } catch (Throwable $e) {
+            Log::error('Coach critique exception', [
+                'session_id' => $session->id,
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->unavailableResult();
+        }
     }
 
-    private function clarify(array $payload, CoachingSession $session): array
+    private function unavailableResult(): CoachCritiqueResult
     {
-        $scores = [
-            'correctness' => [
-                'score' => 0,
+        return new CoachCritiqueResult(
+            scores: [],
+            coachMsg: 'Coach is temporarily unavailable. Your submission was scored using automated checks only.',
+            flags: [],
+            questions: [],
+            available: false,
+        );
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $scores
+     * @return array<string, array{score: int, max_score: int|null, reason: string|null, by: string}>
+     */
+    private function mapScores(array $scores): array
+    {
+        $mapped = [];
+
+        foreach ($scores as $key => $entry) {
+            if (! \is_array($entry)) {
+                continue;
+            }
+
+            $mapped[$key] = [
+                'score' => (int) ($entry['score'] ?? 0),
+                'max_score' => isset($entry['max_score']) ? (int) $entry['max_score'] : null,
+                'reason' => isset($entry['reason']) ? (string) $entry['reason'] : null,
                 'by' => 'coach',
-            ],
-        ];
+            ];
+        }
 
-        return $scores;
-    }
-
-    private function bruteForce(array $payload): array
-    {
-        $runner = $payload['runner'] ?? [];
-
-        $correctnessScore = ($runner['tests']['summary']['failed'] ?? 1) === 0 ? 3 : 0;
-
-        $scores = [
-            'correctness' => [
-                'score' => $correctnessScore,
-                'by' => 'coach',
-            ],
-            'coach_msg' => $runner['coach_msg'] ?? null,
-        ];
-
-        return $scores;
-    }
-
-    private function optimize(array $payload): array
-    {
-        return [];
-    }
-
-    private function done(array $payload): array
-    {
-        return [];
+        return $mapped;
     }
 }

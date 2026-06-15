@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domains\StateMachine\StageHandlers;
 
+use App\Domains\Coach\Rubrics\ClarifyRubric;
 use App\Domains\Evaluator\AutoEvaluator;
 use App\Domains\Evaluator\CoachEvaluator;
 use App\Domains\StateMachine\Contracts\StageHandler;
@@ -13,10 +16,6 @@ use Illuminate\Support\Facades\Log;
 
 class ClarifyStage implements StageHandler
 {
-    public const PASS_THRESHOLD = 7;
-
-    public const MIN_AUTO_EVALUATOR_SCORE = 4;
-
     public function __construct(
         private AutoEvaluator $autoEvaluator,
         private CoachEvaluator $coachEvaluator,
@@ -34,13 +33,13 @@ class ClarifyStage implements StageHandler
                 'score'
             ));
 
-            if ($autoEvaluatorTotal < self::MIN_AUTO_EVALUATOR_SCORE) {
+            if ($autoEvaluatorTotal < ClarifyRubric::MIN_AUTO_EVALUATOR_SCORE) {
                 return new StageResult(
                     stage: Stage::Clarify,
                     evaluator: 'auto',
                     rubricScores: $autoEvaluatorScores,
-                    totalScore: '0',
-                    passThreshold: (string) self::PASS_THRESHOLD,
+                    totalScore: $autoEvaluatorTotal,
+                    passThreshold: ClarifyRubric::PASS_THRESHOLD,
                     passed: false,
                     nextState: Stage::Clarify,
                     testResults: [],
@@ -48,32 +47,44 @@ class ClarifyStage implements StageHandler
                 );
             }
 
-            $coachEvaluatorScores = $this->coachEvaluator->evaluate(Stage::Clarify, $coachingSessionPayload, $session);
-            $coachEvaluatorTotal = array_sum(array_column(
-                $coachEvaluatorScores,
-                'score'
-            ));
+            $critique = $this->coachEvaluator->evaluate(Stage::Clarify, $coachingSessionPayload, $session);
 
-            // Calculate total score (max 12, pass threshold >= 7)
-            $totalScore = $autoEvaluatorTotal + $coachEvaluatorTotal;
-            $passed = $totalScore >= self::PASS_THRESHOLD;
+            if ($critique->available) {
+                $rubricScores = $critique->scores;
+                $totalScore = (int) array_sum(array_column($rubricScores, 'score'));
+                $coachMsg = $critique->coachMsg;
+                $flags = $critique->flags;
+                $questions = $critique->questions;
+                $evaluator = 'coach';
+            } else {
+                $rubricScores = $autoEvaluatorScores;
+                $totalScore = $autoEvaluatorTotal;
+                $coachMsg = $critique->coachMsg;
+                $flags = [];
+                $questions = [];
+                $evaluator = 'auto';
+            }
 
-            $testResults = [];
-            $coachMsg = $passed ? null : 'Please provide more detail in your clarifications.';
+            $passed = $totalScore >= ClarifyRubric::PASS_THRESHOLD;
+
+            if ($passed) {
+                $coachMsg = $coachMsg ?? null;
+            } else {
+                $coachMsg = $coachMsg ?? 'Please provide more detail in your clarifications.';
+            }
 
             return new StageResult(
                 stage: Stage::Clarify,
-                evaluator: 'auto',
-                rubricScores: [
-                    ...$autoEvaluatorScores,
-                    ...$coachEvaluatorScores,
-                ],
-                totalScore: (string) $totalScore,
-                passThreshold: (string) self::PASS_THRESHOLD,
+                evaluator: $evaluator,
+                rubricScores: $rubricScores,
+                totalScore: $totalScore,
+                passThreshold: ClarifyRubric::PASS_THRESHOLD,
                 passed: $passed,
                 nextState: $passed ? Stage::Clarify->next() : Stage::Clarify,
-                testResults: $testResults,
+                testResults: [],
                 coachMsg: $coachMsg,
+                flags: $flags,
+                questions: $questions,
             );
         } catch (Exception $e) {
             Log::error(
@@ -88,8 +99,8 @@ class ClarifyStage implements StageHandler
                 stage: Stage::Clarify,
                 evaluator: 'auto',
                 rubricScores: [],
-                totalScore: '0',
-                passThreshold: (string) self::PASS_THRESHOLD,
+                totalScore: 0,
+                passThreshold: ClarifyRubric::PASS_THRESHOLD,
                 passed: false,
                 nextState: Stage::Clarify,
                 testResults: [],

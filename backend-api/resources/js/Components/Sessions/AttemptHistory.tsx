@@ -35,7 +35,7 @@ export default function AttemptHistory({
                             acc.push(
                                 <div
                                     key={`stage-${attempt.stage}`}
-                                    className="font-medium text-xs text-gray-500 dark:text-gray-400 mb-2"
+                                    className="font-bold text-xs text-gray-300 dark:text-gray-400 mb-2"
                                 >
                                     {stageLabels[attempt.stage] || attempt.stage}
                                 </div>,

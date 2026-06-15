@@ -41,7 +41,7 @@ class BruteForceStage implements StageHandler
 
             $rubricScores = [
                 ...$autoEvaluation,
-                ...$coachEvaluation,
+                ...$coachEvaluation->scores ?? [],
             ];
             $totalScore = array_sum(array_column($rubricScores, 'score')) ?? 0;
 
@@ -55,8 +55,8 @@ class BruteForceStage implements StageHandler
                 stage: Stage::BruteForce,
                 evaluator: 'auto+coach',
                 rubricScores: $rubricScores,
-                totalScore: (string) $totalScore,
-                passThreshold: (string) self::PASS_THRESHOLD,
+                totalScore: $totalScore,
+                passThreshold: self::PASS_THRESHOLD,
                 passed: $passed,
                 nextState: $passed ? Stage::BruteForce->next() : Stage::BruteForce,
                 testResults: $testResults,
@@ -75,8 +75,8 @@ class BruteForceStage implements StageHandler
                 stage: Stage::BruteForce,
                 evaluator: 'auto+coach',
                 rubricScores: [],
-                totalScore: '0',
-                passThreshold: (string) self::PASS_THRESHOLD,
+                totalScore: 0,
+                passThreshold: self::PASS_THRESHOLD,
                 passed: false,
                 nextState: Stage::BruteForce,
                 testResults: [],

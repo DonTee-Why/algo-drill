@@ -8,11 +8,39 @@ use App\Enums\Stage;
 use App\Models\Problem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class CoachingSessionTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['services.coach.url' => 'http://coach.test']);
+
+        Http::fake([
+            'http://coach.test/coach/critique' => Http::response([
+                'coach_msg' => 'Good clarification.',
+                'scores' => [
+                    'inputs_outputs' => ['score' => 3, 'max_score' => 3, 'reason' => 'Clear'],
+                    'constraints' => ['score' => 3, 'max_score' => 3, 'reason' => 'Clear'],
+                    'examples' => ['score' => 6, 'max_score' => 6, 'reason' => 'Includes edge case'],
+                ],
+                'flags' => [
+                    'too_vague' => false,
+                    'output_contract_confused' => false,
+                    'values_vs_indices_confusion' => false,
+                    'missing_edge_case' => false,
+                    'code_leak_blocked' => false,
+                    'prompt_injection_detected' => false,
+                ],
+                'questions' => [],
+            ]),
+        ]);
+    }
 
     public function test_authenticated_user_can_create_coaching_session(): void
     {

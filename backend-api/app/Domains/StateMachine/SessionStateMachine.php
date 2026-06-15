@@ -18,9 +18,6 @@ class SessionStateMachine
     /**
      * Process a submission for the current stage
      *
-     * @param CoachingSession $session
-     * @param array $coachingSessionPayload
-     * @return StageResult
      * @throws InvalidSessionStateException
      */
     public function process(CoachingSession $session, array $coachingSessionPayload): StageResult
@@ -33,6 +30,7 @@ class SessionStateMachine
             $stageResult,
             $coachingSessionPayload
         );
+
         return $stageResult;
     }
 
@@ -69,20 +67,25 @@ class SessionStateMachine
 
     /**
      * Update the session state
-     *
-     * @param CoachingSession $session
-     * @param StageResult $stageResult
-     * @param array $coachingSessionPayload
-     * @return void
      */
     protected function updateSessionState(CoachingSession $session, StageResult $stageResult, array $coachingSessionPayload = []): void
     {
         DB::transaction(function () use ($session, $stageResult, $coachingSessionPayload) {
+            $rubricScores = $stageResult->rubricScores;
+
+            if ($stageResult->flags !== null) {
+                $rubricScores['_flags'] = $stageResult->flags;
+            }
+
+            if ($stageResult->questions !== null) {
+                $rubricScores['_questions'] = $stageResult->questions;
+            }
+
             $session->attempts()->create([
                 'stage' => $session->state,
                 'payload' => $coachingSessionPayload,
                 'coach_msg' => $stageResult->coachMsg,
-                'rubric_scores' => $stageResult->rubricScores,
+                'rubric_scores' => $rubricScores,
             ]);
 
             if ($stageResult->passed && $stageResult->nextState) {

@@ -56,10 +56,7 @@ final class AutoEvaluator implements RubricEvaluator
 
         $compilesScore = ($runner['compiled'] ?? false) ? 3 : 0;
         $signatureScore = ($runner['signature_ok'] ?? false) ? 3 : 0;
-
-        $allPassed = ($runner['tests']['summary']['failed'] ?? 1) === 0
-            && ($runner['tests']['summary']['total'] ?? 0) > 0;
-        $anyPassed = ($runner['tests']['summary']['passed'] ?? 0) > 0;
+        $correctnessScore = ($runner['tests']['summary']['failed'] ?? 1) === 0 ? 3 : 0;
 
         $scores = [
             'compiles' => [
@@ -68,6 +65,10 @@ final class AutoEvaluator implements RubricEvaluator
             ],
             'signature' => [
                 'score' => $signatureScore,
+                'by' => 'auto',
+            ],
+            'correctness' => [
+                'score' => $correctnessScore,
                 'by' => 'auto',
             ],
         ];

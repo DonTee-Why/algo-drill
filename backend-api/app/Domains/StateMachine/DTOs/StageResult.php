@@ -10,11 +10,13 @@ final class StageResult
         public ?Stage $stage,
         public string $evaluator,
         public array $rubricScores,
-        public string $totalScore,
-        public string $passThreshold,
+        public int $totalScore,
+        public int $passThreshold,
         public bool $passed,
         public ?Stage $nextState,
         public ?array $testResults = null,
         public ?string $coachMsg = null,
+        public ?array $flags = null,
+        public ?array $questions = null,
     ) {}
 }
