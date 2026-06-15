@@ -213,10 +213,10 @@ class CoachingSessionController extends Controller
         $this->authorize('submit', $session);
 
         $validated = $request->validated();
-        $payload = $validated['payload'] ?? [];
+        $coachingSessionPayload = $validated['payload'] ?? [];
 
         try {
-            $stageResult = $this->coachingSessionService->submitSession($session, $payload);
+            $stageResult = $this->coachingSessionService->submitSession($session, $coachingSessionPayload);
 
             return redirect()->route('sessions.show', $session->id)
                 ->with('success', 'Submission received successfully!')

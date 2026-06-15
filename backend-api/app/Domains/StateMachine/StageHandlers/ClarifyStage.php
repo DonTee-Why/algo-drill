@@ -25,10 +25,10 @@ class ClarifyStage implements StageHandler
     /**
      * Evaluate the clarify stage
      */
-    public function evaluate(CoachingSession $session, array $payload): StageResult
+    public function evaluate(CoachingSession $session, array $coachingSessionPayload): StageResult
     {
         try {
-            $autoEvaluatorScores = $this->autoEvaluator->evaluate(Stage::Clarify, $payload, $session);
+            $autoEvaluatorScores = $this->autoEvaluator->evaluate(Stage::Clarify, $coachingSessionPayload, $session);
             $autoEvaluatorTotal = (int) array_sum(array_column(
                 $autoEvaluatorScores,
                 'score'
@@ -48,7 +48,7 @@ class ClarifyStage implements StageHandler
                 );
             }
 
-            $coachEvaluatorScores = $this->coachEvaluator->evaluate(Stage::Clarify, $payload, $session);
+            $coachEvaluatorScores = $this->coachEvaluator->evaluate(Stage::Clarify, $coachingSessionPayload, $session);
             $coachEvaluatorTotal = array_sum(array_column(
                 $coachEvaluatorScores,
                 'score'

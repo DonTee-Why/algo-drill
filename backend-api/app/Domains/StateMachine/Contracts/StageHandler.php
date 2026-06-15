@@ -8,8 +8,8 @@ use App\Models\CoachingSession;
 interface StageHandler {
     /**
      * @param CoachingSession $session
-     * @param array $payload
+     * @param array $coachingSessionPayload
      * @return StageResult
      */
-    public function evaluate(CoachingSession $session, array $payload): StageResult;
+    public function evaluate(CoachingSession $session, array $coachingSessionPayload): StageResult;
 }

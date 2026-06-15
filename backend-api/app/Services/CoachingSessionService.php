@@ -36,10 +36,10 @@ class CoachingSessionService
         return $session;
     }
 
-    public function submitSession(CoachingSession $session, array $payload): StageResult
+    public function submitSession(CoachingSession $session, array $coachingSessionPayload): StageResult
     {
         try {
-            $stageResult = $this->stateMachine->process($session, $payload);
+            $stageResult = $this->stateMachine->process($session, $coachingSessionPayload);
 
             return $stageResult;
         } catch (InvalidSessionStateException $e) {

@@ -19,19 +19,19 @@ class SessionStateMachine
      * Process a submission for the current stage
      *
      * @param CoachingSession $session
-     * @param array $payload
+     * @param array $coachingSessionPayload
      * @return StageResult
      * @throws InvalidSessionStateException
      */
-    public function process(CoachingSession $session, array $payload): StageResult
+    public function process(CoachingSession $session, array $coachingSessionPayload): StageResult
     {
         $this->validateSessionState($session);
-        $stageResult = $this->evaluate($session, $payload);
+        $stageResult = $this->evaluate($session, $coachingSessionPayload);
 
         $this->updateSessionState(
             $session,
             $stageResult,
-            $payload
+            $coachingSessionPayload
         );
         return $stageResult;
     }
@@ -41,12 +41,12 @@ class SessionStateMachine
      *
      * @throws InvalidSessionStateException
      */
-    protected function evaluate(CoachingSession $session, array $payload): StageResult
+    protected function evaluate(CoachingSession $session, array $coachingSessionPayload): StageResult
     {
-        $stage = $session->state;
-        $stateHandler = $this->stateHandlerFactory->for($stage);
+        $currentStage = $session->state;
+        $stateHandler = $this->stateHandlerFactory->for($currentStage);
 
-        return $stateHandler->evaluate($session, $payload);
+        return $stateHandler->evaluate($session, $coachingSessionPayload);
     }
 
     /**
@@ -72,15 +72,15 @@ class SessionStateMachine
      *
      * @param CoachingSession $session
      * @param StageResult $stageResult
-     * @param array $payload
+     * @param array $coachingSessionPayload
      * @return void
      */
-    protected function updateSessionState(CoachingSession $session, StageResult $stageResult, array $payload = []): void
+    protected function updateSessionState(CoachingSession $session, StageResult $stageResult, array $coachingSessionPayload = []): void
     {
-        DB::transaction(function () use ($session, $stageResult, $payload) {
+        DB::transaction(function () use ($session, $stageResult, $coachingSessionPayload) {
             $session->attempts()->create([
                 'stage' => $session->state,
-                'payload' => $payload,
+                'payload' => $coachingSessionPayload,
                 'coach_msg' => $stageResult->coachMsg,
                 'rubric_scores' => $stageResult->rubricScores,
             ]);

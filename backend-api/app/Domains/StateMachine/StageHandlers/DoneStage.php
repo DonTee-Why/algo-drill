@@ -12,7 +12,7 @@ class DoneStage implements StageHandler
     /**
      * Evaluate the done stage
      */
-    public function evaluate(CoachingSession $session, array $payload): StageResult
+    public function evaluate(CoachingSession $session, array $coachingSessionPayload): StageResult
     {
         $rubricScores = [
             'done' => [

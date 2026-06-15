@@ -25,15 +25,15 @@ class BruteForceStage implements StageHandler
     /**
      * Evaluate the brute force stage
      */
-    public function evaluate(CoachingSession $session, array $payload): StageResult
+    public function evaluate(CoachingSession $session, array $coachingSessionPayload): StageResult
     {
-        $code = $payload['code'] ?? '';
-        $lang = $payload['lang'] ?? null;
+        $code = $coachingSessionPayload['code'] ?? '';
+        $lang = $coachingSessionPayload['lang'] ?? null;
 
         try {
             $runnerResult = $this->testHarnessService->runCode($session, $lang, $code, isSubmission: true);
 
-            $rubricPayload = $payload;
+            $rubricPayload = $coachingSessionPayload;
             $rubricPayload['runner'] = $runnerResult;
 
             $autoEvaluation = $this->autoEvaluator->evaluate(Stage::BruteForce, $rubricPayload, $session);

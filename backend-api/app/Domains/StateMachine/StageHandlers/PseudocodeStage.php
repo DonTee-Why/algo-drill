@@ -12,7 +12,7 @@ class PseudocodeStage implements StageHandler
     /**
      * Evaluate the pseudocode stage
      */
-    public function evaluate(CoachingSession $session, array $payload): StageResult
+    public function evaluate(CoachingSession $session, array $coachingSessionPayload): StageResult
     {
         $rubricScores = [
             'pseudocode' => [
