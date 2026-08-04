@@ -3,9 +3,10 @@
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  make up          - Start Docker containers"
-	@echo "  make down        - Stop Docker containers"
+	@echo "  make up          - Start backend-api containers (use root make up for full stack)"
+	@echo "  make down        - Stop backend-api containers"
 	@echo "  make restart     - Restart Docker containers"
+	@echo "  make start       - Start full stack via root Makefile"
 	@echo "  make shell        - Open shell in app container"
 	@echo "  make test        - Run all tests"
 	@echo "  make test-auth    - Run authentication tests"
@@ -19,15 +20,20 @@ help:
 	@echo "  make logs         - View container logs"
 	@echo "  make artisan      - Run artisan command (usage: make artisan CMD=route:list)"
 
-# Docker Compose commands
+# Docker Compose commands (backend-api stack only; use root `make up` for full stack)
 up:
 	docker compose up -d
+	docker compose exec app sh -c 'until ./node_modules/.bin/vite --version >/dev/null 2>&1; do echo "Waiting for entrypoint npm install..."; sleep 2; done'
+	docker compose exec app npm run build
 
 down:
 	docker compose down
 
+down-v:
+	docker compose down -v
+
 start:
-	cd .. && ./backend-api-start.sh
+	cd .. && $(MAKE) up
 
 restart:
 	docker compose restart
@@ -63,7 +69,10 @@ pint:
 migrate:
 	docker compose exec app php artisan migrate
 
-fresh:
+migrate-fresh:
+	docker compose exec app php artisan migrate:fresh
+
+migrate-fresh-seed:
 	docker compose exec app php artisan migrate:fresh --seed
 
 seed:
@@ -73,6 +82,9 @@ seed:
 artisan:
 	docker compose exec app php artisan $(CMD)
 
+artisan-make:
+	docker compose exec app php artisan make:$(TYPE) $(NAME)
+
 # Development helpers
 install:
 	docker compose exec app composer install
@@ -81,8 +93,20 @@ install:
 npm-install:
 	docker compose exec app npm install
 
+npm-reinstall:
+	docker compose stop app
+	docker rm -v algo-drill-app
+	docker compose up -d app
+	docker compose exec app sh -c 'until ./node_modules/.bin/vite --version >/dev/null 2>&1; do echo "Waiting for npm install..."; sleep 2; done'
+
 npm-build:
 	docker compose exec app npm run build
+
+npm-build-watch:
+	docker compose exec app npm run build:watch
+
+npm-dev:
+	docker compose exec app npm run dev
 
 build:
 	docker compose build
