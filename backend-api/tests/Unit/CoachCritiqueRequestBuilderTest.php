@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Domains\Coach\Builders\ClarifyAutoSignalsBuilder;
 use App\Domains\Coach\Builders\CoachCritiqueRequestBuilder;
+use App\Domains\Coach\DTOs\CoachConstraints;
 use App\Domains\Coach\DTOs\CoachCritiqueRequest;
 use App\Domains\Coach\DTOs\ProblemContext;
 use App\Enums\Lang;
@@ -27,7 +27,7 @@ class CoachCritiqueRequestBuilderTest extends TestCase
     {
         parent::setUp();
 
-        $this->builder = new CoachCritiqueRequestBuilder(new ClarifyAutoSignalsBuilder);
+        $this->builder = $this->app->make(CoachCritiqueRequestBuilder::class);
     }
 
     public function test_builds_clarify_payload_with_snake_case_keys(): void
@@ -64,10 +64,12 @@ class CoachCritiqueRequestBuilderTest extends TestCase
 
         $this->assertInstanceOf(CoachCritiqueRequest::class, $request);
         $this->assertInstanceOf(ProblemContext::class, $request->problemContext);
+        $this->assertInstanceOf(CoachConstraints::class, $request->coachConstraints);
         $this->assertSame($session->id, $request->sessionId);
         $this->assertSame(Stage::Clarify, $request->stage);
         $this->assertSame('Two Sum', $request->problemContext->title);
         $this->assertSame('twoSum', $request->problemContext->signature?->functionName);
+        $this->assertTrue($request->coachConstraints->noCode);
 
         $array = $request->toArray();
 

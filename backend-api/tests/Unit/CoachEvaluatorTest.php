@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Domains\Coach\Builders\ClarifyAutoSignalsBuilder;
-use App\Domains\Coach\Builders\CoachCritiqueRequestBuilder;
 use App\Domains\Evaluator\CoachEvaluator;
 use App\Enums\Stage;
 use App\Models\CoachingSession;
 use App\Models\Problem;
 use App\Models\User;
-use App\Services\CoachClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -41,10 +38,7 @@ class CoachEvaluatorTest extends TestCase
         $problem = Problem::factory()->create();
         $session = CoachingSession::factory()->for($user)->for($problem)->create();
 
-        $evaluator = new CoachEvaluator(
-            new CoachClient,
-            new CoachCritiqueRequestBuilder(new ClarifyAutoSignalsBuilder),
-        );
+        $evaluator = $this->app->make(CoachEvaluator::class);
 
         $result = $evaluator->evaluate(Stage::Clarify, [
             'inputs_outputs' => 'nums and target in, indices out',
@@ -72,10 +66,7 @@ class CoachEvaluatorTest extends TestCase
         $problem = Problem::factory()->create();
         $session = CoachingSession::factory()->for($user)->for($problem)->create();
 
-        $evaluator = new CoachEvaluator(
-            new CoachClient,
-            new CoachCritiqueRequestBuilder(new ClarifyAutoSignalsBuilder),
-        );
+        $evaluator = $this->app->make(CoachEvaluator::class);
 
         $result = $evaluator->evaluate(Stage::Clarify, [
             'inputs_outputs' => 'nums and target in, indices out',

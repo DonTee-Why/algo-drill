@@ -10,20 +10,8 @@ final class CoachCritiqueRequest
 {
     /**
      * @param  list<array{key: string, max_score: int, expectation: string}>  $rubric
-     * @param  array{inputs_outputs: string, constraints: string, examples: mixed}  $submission
-     * @param  array{
-     *     mentioned_param_names: list<string>,
-     *     missing_param_names: list<string>,
-     *     example_count: int,
-     *     has_marked_edge_case: bool
-     * }  $autoSignals
-     * @param  array{
-     *     no_code: bool,
-     *     no_solution_reveal: bool,
-     *     feedback_style: string,
-     *     max_questions: int,
-     *     max_tokens: int
-     * }  $coachConstraints
+     * @param  array<string, mixed>  $submission
+     * @param  array<string, mixed>  $autoSignals
      */
     public function __construct(
         public string $sessionId,
@@ -32,7 +20,7 @@ final class CoachCritiqueRequest
         public ProblemContext $problemContext,
         public array $submission,
         public array $autoSignals,
-        public array $coachConstraints,
+        public CoachConstraints $coachConstraints,
     ) {}
 
     /**
@@ -47,7 +35,7 @@ final class CoachCritiqueRequest
      *         problem_constraints: list<string>|array<int, string>,
      *         signature: array{function_name: string, params: mixed, returns: mixed}|null
      *     },
-     *     submission: array{inputs_outputs: string, constraints: string, examples: mixed},
+     *     submission: array<string, mixed>,
      *     auto_signals: array<string, mixed>,
      *     coach_constraints: array{
      *         no_code: bool,
@@ -67,7 +55,7 @@ final class CoachCritiqueRequest
             'problem_context' => $this->problemContext->toArray(),
             'submission' => $this->submission,
             'auto_signals' => $this->autoSignals,
-            'coach_constraints' => $this->coachConstraints,
+            'coach_constraints' => $this->coachConstraints->toArray(),
         ];
     }
 }
