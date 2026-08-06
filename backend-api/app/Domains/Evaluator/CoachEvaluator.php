@@ -32,7 +32,7 @@ class CoachEvaluator implements RubricEvaluator
     {
         try {
             $requestPayload = $this->requestBuilder->build($session, $stage, $payload);
-            $response = $this->coachClient->critique($requestPayload);
+            $response = $this->coachClient->critique($requestPayload->toArray());
 
             if (! ($response['success'] ?? false)) {
                 Log::warning('Coach critique request failed', [

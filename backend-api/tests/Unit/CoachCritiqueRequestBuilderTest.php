@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use App\Domains\Coach\Builders\ClarifyAutoSignalsBuilder;
 use App\Domains\Coach\Builders\CoachCritiqueRequestBuilder;
+use App\Domains\Coach\DTOs\CoachCritiqueRequest;
 use App\Enums\Lang;
 use App\Enums\Stage;
 use App\Models\CoachingSession;
@@ -60,15 +61,20 @@ class CoachCritiqueRequestBuilderTest extends TestCase
 
         $request = $this->builder->build($session, Stage::Clarify, $payload);
 
-        $this->assertSame($session->id, $request['session_id']);
-        $this->assertSame('CLARIFY', $request['stage']);
-        $this->assertArrayHasKey('rubric', $request);
-        $this->assertSame('Two Sum', $request['problem_context']['title']);
-        $this->assertSame('twoSum', $request['problem_context']['signature']['function_name']);
-        $this->assertSame($payload['inputs_outputs'], $request['submission']['inputs_outputs']);
-        $this->assertContains('nums', $request['auto_signals']['mentioned_param_names']);
-        $this->assertContains('target', $request['auto_signals']['mentioned_param_names']);
-        $this->assertTrue($request['auto_signals']['has_marked_edge_case']);
-        $this->assertTrue($request['constraints']['no_code']);
+        $this->assertInstanceOf(CoachCritiqueRequest::class, $request);
+        $this->assertSame($session->id, $request->sessionId);
+        $this->assertSame(Stage::Clarify, $request->stage);
+
+        $array = $request->toArray();
+
+        $this->assertSame('CLARIFY', $array['stage']);
+        $this->assertArrayHasKey('rubric', $array);
+        $this->assertSame('Two Sum', $array['problem_context']['title']);
+        $this->assertSame('twoSum', $array['problem_context']['signature']['function_name']);
+        $this->assertSame($payload['inputs_outputs'], $array['submission']['inputs_outputs']);
+        $this->assertContains('nums', $array['auto_signals']['mentioned_param_names']);
+        $this->assertContains('target', $array['auto_signals']['mentioned_param_names']);
+        $this->assertTrue($array['auto_signals']['has_marked_edge_case']);
+        $this->assertTrue($array['coach_constraints']['no_code']);
     }
 }

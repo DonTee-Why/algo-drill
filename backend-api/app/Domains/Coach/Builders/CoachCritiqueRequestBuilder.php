@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Coach\Builders;
 
+use App\Domains\Coach\DTOs\CoachCritiqueRequest;
 use App\Domains\Coach\Rubrics\ClarifyRubric;
 use App\Enums\Lang;
 use App\Enums\Stage;
@@ -19,9 +20,8 @@ final class CoachCritiqueRequestBuilder
 
     /**
      * @param  array<string, mixed>  $payload
-     * @return array<string, mixed>
      */
-    public function build(CoachingSession $session, Stage $stage, array $payload): array
+    public function build(CoachingSession $session, Stage $stage, array $payload): CoachCritiqueRequest
     {
         return match ($stage) {
             Stage::Clarify => $this->buildClarify($session, $payload),
@@ -31,33 +31,32 @@ final class CoachCritiqueRequestBuilder
 
     /**
      * @param  array<string, mixed>  $payload
-     * @return array<string, mixed>
      */
-    private function buildClarify(CoachingSession $session, array $payload): array
+    private function buildClarify(CoachingSession $session, array $payload): CoachCritiqueRequest
     {
         $session->loadMissing(['problem.signatures']);
 
         $signature = $this->resolveSignature($session);
 
-        return [
-            'session_id' => $session->id,
-            'stage' => Stage::Clarify->value,
-            'rubric' => ClarifyRubric::items(),
-            'problem_context' => $this->buildProblemContext($session, $signature),
-            'submission' => [
+        return new CoachCritiqueRequest(
+            sessionId: $session->id,
+            stage: Stage::Clarify,
+            rubric: ClarifyRubric::items(),
+            problemContext: $this->buildProblemContext($session, $signature),
+            submission: [
                 'inputs_outputs' => (string) ($payload['inputs_outputs'] ?? ''),
                 'constraints' => (string) ($payload['constraints'] ?? ''),
                 'examples' => $payload['examples'] ?? '',
             ],
-            'auto_signals' => $this->autoSignalsBuilder->build($payload, $signature),
-            'coach_constraints' => [
+            autoSignals: $this->autoSignalsBuilder->build($payload, $signature),
+            coachConstraints: [
                 'no_code' => true,
                 'no_solution_reveal' => true,
                 'feedback_style' => 'socratic',
                 'max_questions' => 2,
                 'max_tokens' => 500,
             ],
-        ];
+        );
     }
 
     private function resolveSignature(CoachingSession $session): ?ProblemSignature
