@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domains\Coach\Builders;
 
 use App\Domains\Coach\DTOs\CoachCritiqueRequest;
+use App\Domains\Coach\DTOs\ProblemContext;
+use App\Domains\Coach\DTOs\ProblemSignatureContext;
 use App\Domains\Coach\Rubrics\ClarifyRubric;
 use App\Enums\Lang;
 use App\Enums\Stage;
@@ -79,23 +81,20 @@ final class CoachCritiqueRequestBuilder
         return $signatures->first();
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildProblemContext(CoachingSession $session, ?ProblemSignature $signature): array
+    private function buildProblemContext(CoachingSession $session, ?ProblemSignature $signature): ProblemContext
     {
         $problem = $session->problem;
 
-        return [
-            'title' => $problem->title,
-            'description' => $problem->description_md,
-            'tags' => $problem->tags ?? [],
-            'problem_constraints' => $problem->constraints ?? [],
-            'signature' => $signature !== null ? [
-                'function_name' => $signature->function_name,
-                'params' => $signature->params,
-                'returns' => $signature->returns,
-            ] : null,
-        ];
+        return new ProblemContext(
+            title: $problem->title,
+            description: $problem->description_md,
+            tags: $problem->tags ?? [],
+            problemConstraints: $problem->constraints ?? [],
+            signature: $signature !== null ? new ProblemSignatureContext(
+                functionName: $signature->function_name,
+                params: $signature->params,
+                returns: $signature->returns,
+            ) : null,
+        );
     }
 }

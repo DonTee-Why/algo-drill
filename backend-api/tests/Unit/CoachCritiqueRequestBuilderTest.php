@@ -7,6 +7,7 @@ namespace Tests\Unit;
 use App\Domains\Coach\Builders\ClarifyAutoSignalsBuilder;
 use App\Domains\Coach\Builders\CoachCritiqueRequestBuilder;
 use App\Domains\Coach\DTOs\CoachCritiqueRequest;
+use App\Domains\Coach\DTOs\ProblemContext;
 use App\Enums\Lang;
 use App\Enums\Stage;
 use App\Models\CoachingSession;
@@ -62,8 +63,11 @@ class CoachCritiqueRequestBuilderTest extends TestCase
         $request = $this->builder->build($session, Stage::Clarify, $payload);
 
         $this->assertInstanceOf(CoachCritiqueRequest::class, $request);
+        $this->assertInstanceOf(ProblemContext::class, $request->problemContext);
         $this->assertSame($session->id, $request->sessionId);
         $this->assertSame(Stage::Clarify, $request->stage);
+        $this->assertSame('Two Sum', $request->problemContext->title);
+        $this->assertSame('twoSum', $request->problemContext->signature?->functionName);
 
         $array = $request->toArray();
 
