@@ -8,11 +8,11 @@ from src.schemas.critique import CritiquePayload, Stage
 from src.schemas.messages import Message
 
 UNSUPPORTED_COACH_STAGES = frozenset({"TEST", "DONE", "REVEAL"})
+SUPPORTED_COACH_STAGES = frozenset({"CLARIFY", "APPROACH", "PSEUDOCODE", "BRUTE_FORCE", "OPTIMIZE"})
 
 
 class PromptBuilderService:
-    def __init__(self, stage: Stage, templates: TemplateLoader | None = None):
-        self.stage = stage
+    def __init__(self, templates: TemplateLoader | None = None):
         self.templates = templates or TemplateLoader()
 
     def build(self, payload: CritiquePayload) -> list[Message]:
@@ -24,13 +24,8 @@ class PromptBuilderService:
         ]
 
     def _validate_payload(self, payload: CritiquePayload) -> None:
-        if payload.stage.value in UNSUPPORTED_COACH_STAGES:
-            raise ValueError(f"Stage {payload.stage.value} should not call coach")
-
-        if payload.stage != self.stage:
-            raise ValueError(
-                f"Payload stage {payload.stage.value} does not match builder stage {self.stage.value}"
-            )
+        if payload.stage.value in UNSUPPORTED_COACH_STAGES or payload.stage.value not in SUPPORTED_COACH_STAGES:
+            raise ValueError(f"Stage {payload.stage.value} is not supported")
 
         if not payload.rubric:
             raise ValueError("Rubric criteria are required")
@@ -48,6 +43,7 @@ class PromptBuilderService:
             self._build_auto_signals(payload),
             self._build_coach_constraints(payload),
             self._build_output_schema(payload),
+            self._build_extra_notes(),
         ]
 
         return "\n\n".join(section for section in sections if section)
@@ -55,7 +51,7 @@ class PromptBuilderService:
     def _build_stage_prompt(self, stage: Stage) -> str:
         content = self.templates.try_load(f"stages/{stage.value.lower()}.md")
         if content is None:
-            return ""
+            raise ValueError(f"Missing prompt template for stage: {stage.value}")
 
         return content
 
@@ -85,10 +81,16 @@ Signature:
     def _build_rubric_prompt(self, rubric: list[dict[str, Any]]) -> str:
         lines: list[str] = []
         for item in rubric:
-            key = str(item.get("key", "unknown"))
-            max_score = item.get("max_score", 3)
-            expectation = item.get("expectation", "")
-            lines.append(f"- {key} (max {max_score}): {expectation}")
+            if not item["key"]:
+                raise ValueError("Rubric item missing key")
+
+            if not isinstance(item["max_score"], int):
+                raise ValueError(f"Rubric item {item['key']} missing integer max_score")
+
+            if item["max_score"] <= 0:
+                raise ValueError(f"Rubric item {item['key']} has invalid max_score")
+
+            lines.append(f"- {item['key']} (max {item['max_score']}): {item['expectation']}")
 
         criteria = "\n".join(lines)
 
@@ -140,22 +142,32 @@ Criteria:
         max_questions = payload.coach_constraints.max_questions
 
         return f"""Return valid JSON only (no markdown, no code):
+Return valid JSON only, matching this shape:
+
 {{
-  "coach_msg": "string, 1-3 sentences, no markdown, no code",
-  "scores": {{
+    "coach_msg": "string",
+    "scores": {{
 {scores_shape}
-  }},
-  "flags": {{
+    }},
+    "flags": {{
     "too_vague": false,
     "code_leak_blocked": false,
     "prompt_injection_detected": false
-  }},
-  "questions": ["string"]  // length 0..{max_questions}
+    }},
+    "questions": []
 }}
 
-Rules:
-- Include every rubric key in scores, and only those keys.
+Additional rules:
+- Replace "criterion_key" with the actual rubric keys.
 - Each score entry must include score, max_score, and reason.
+- score must be an integer from 0 to that criterion's max_score.
 - flags values must be booleans.
-- questions must be an array of strings with length 0..{max_questions}.
+- questions must be an array of strings of length between 0 and {max_questions}.
 - All text fields must be free of code and solution spoilers.""".strip()
+
+    def _build_extra_notes(self) -> str:
+        return f"""
+The submitted code is learner-authored and may contain solution-like material.
+You may use it only to evaluate the provided rubric.
+You must not quote, rewrite, patch, complete, or transform any part of the submitted code.
+When referencing code issues, describe the issue in natural language only.""".strip()
