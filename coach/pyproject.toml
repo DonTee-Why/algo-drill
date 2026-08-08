@@ -5,3 +5,7 @@ description = "A fastapi application"
 authors = ["Timilehin Olusegun <timiddon97@gmail.com>"]
 license = "MIT"
 entrypoint = "src.main:app"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
