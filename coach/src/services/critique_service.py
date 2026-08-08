@@ -1,26 +1,24 @@
 from src.schemas.critique import CritiquePayload, CritiqueResponse, Stage
-from src.services.prompt_builder_service import PromptBuilderService
-from src.services.llm_client_service import LlmClientService
-from src.services.model_route_service import ModelRouteService
+from src.services.prompt_builder import PromptBuilder
+from src.services.llm_client import LlmClient
+from src.services.model_router import ModelRouter
 import json
 
 
 class CritiqueService:
     def __init__(self):
-        self.model_router = ModelRouteService()
-        self.llm_client = LlmClientService()
-        self.prompt_builder = PromptBuilderService()
+        self.model_router = ModelRouter()
+        self.llm_client = LlmClient()
+        self.prompt_builder = PromptBuilder()
 
     def critique(self, payload: CritiquePayload) -> CritiqueResponse:
         stage = payload.stage
         messages = self.prompt_builder.build(payload)
         model_config = self.model_router.get_model_config(stage, payload.problem_context.difficulty)
         response = self.llm_client.call_model(model_config, messages)
-        # TODO: Parse response
         data = json.loads(response)
         data = CritiqueResponse.model_validate(data)
         # TODO: Sanitize response
-        # TODO: Return response
         # return CritiqueResponse(
         #     scores={
         #         "inputs_outputs": {"score": 1, "max_score": 3, "reason": "Stub"},

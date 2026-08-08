@@ -7,7 +7,7 @@ import pytest
 
 from src.schemas.config import ModelConfig
 from src.schemas.messages import Message
-from src.services.llm_client_service import LlmClientService
+from src.services.llm_client_service import LlmClient
 
 
 def _model_config(**overrides) -> ModelConfig:
@@ -26,12 +26,12 @@ def _model_config(**overrides) -> ModelConfig:
 
 
 @pytest.fixture
-def llm_client() -> LlmClientService:
-    return LlmClientService()
+def llm_client() -> LlmClient:
+    return LlmClient()
 
 
 def test_get_client_builds_openai_client_without_base_url(
-    llm_client: LlmClientService,
+    llm_client: LlmClient,
 ) -> None:
     model_config = _model_config()
 
@@ -43,7 +43,7 @@ def test_get_client_builds_openai_client_without_base_url(
     assert client is openai_cls.return_value
 
 
-def test_get_client_passes_base_url_when_present(llm_client: LlmClientService) -> None:
+def test_get_client_passes_base_url_when_present(llm_client: LlmClient) -> None:
     model_config = _model_config(
         vendor="moonshot",
         base_url="https://api.moonshot.ai/v1",
@@ -59,14 +59,14 @@ def test_get_client_passes_base_url_when_present(llm_client: LlmClientService) -
     )
 
 
-def test_get_client_rejects_unsupported_provider(llm_client: LlmClientService) -> None:
+def test_get_client_rejects_unsupported_provider(llm_client: LlmClient) -> None:
     model_config = _model_config(provider="anthropic")
 
     with pytest.raises(ValueError, match="Invalid provider: anthropic"):
         llm_client.get_client(model_config)
 
 
-def test_call_model_returns_message_content(llm_client: LlmClientService) -> None:
+def test_call_model_returns_message_content(llm_client: LlmClient) -> None:
     model_config = _model_config()
     messages = [
         Message(role="system", content="system prompt"),
@@ -94,7 +94,7 @@ def test_call_model_returns_message_content(llm_client: LlmClientService) -> Non
 
 
 def test_call_model_includes_reasoning_effort_when_set(
-    llm_client: LlmClientService,
+    llm_client: LlmClient,
 ) -> None:
     model_config = _model_config(reasoning_effort="medium", temperature=0.85, max_tokens=300)
     messages = [Message(role="user", content="optimize this")]
@@ -113,7 +113,7 @@ def test_call_model_includes_reasoning_effort_when_set(
     assert "response_format" in kwargs
 
 
-def test_call_model_rejects_empty_response(llm_client: LlmClientService) -> None:
+def test_call_model_rejects_empty_response(llm_client: LlmClient) -> None:
     model_config = _model_config()
     messages = [Message(role="user", content="hello")]
     mock_client = MagicMock()
@@ -126,7 +126,7 @@ def test_call_model_rejects_empty_response(llm_client: LlmClientService) -> None
             llm_client.call_model(model_config, messages)
 
 
-def test_call_model_rejects_none_response(llm_client: LlmClientService) -> None:
+def test_call_model_rejects_none_response(llm_client: LlmClient) -> None:
     model_config = _model_config()
     messages = [Message(role="user", content="hello")]
     mock_client = MagicMock()

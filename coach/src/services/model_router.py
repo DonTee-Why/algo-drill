@@ -71,7 +71,7 @@ STAGE_MODELS = {
 }
 
 
-class ModelRouteService:
+class ModelRouter:
     def get_model_config(self, stage: Stage, difficulty: Difficulty | None = None) -> ModelConfig:
         try:
             model_config = STAGE_MODELS[stage]

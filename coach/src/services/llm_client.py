@@ -3,7 +3,7 @@ from src.schemas.config import ModelConfig
 from src.schemas.messages import Message
 from openai import OpenAI
 
-class LlmClientService:
+class LlmClient:
     def get_client(self, model_config: ModelConfig):
         if model_config.provider == "openai_compatible":
             kwargs = {

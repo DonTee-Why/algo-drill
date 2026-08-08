@@ -11,7 +11,7 @@ UNSUPPORTED_COACH_STAGES = frozenset({"TEST", "DONE", "REVEAL"})
 SUPPORTED_COACH_STAGES = frozenset({"CLARIFY", "APPROACH", "PSEUDOCODE", "BRUTE_FORCE", "OPTIMIZE"})
 
 
-class PromptBuilderService:
+class PromptBuilder:
     def __init__(self, templates: TemplateLoader | None = None):
         self.templates = templates or TemplateLoader()
 

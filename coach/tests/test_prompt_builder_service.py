@@ -13,7 +13,7 @@ from src.schemas.critique import (
     Stage,
     Submission,
 )
-from src.services.prompt_builder_service import PromptBuilderService
+from src.services.prompt_builder_service import PromptBuilder
 
 PROMPTS_DIR = Path(__file__).resolve().parents[1] / "src" / "prompts"
 
@@ -155,13 +155,13 @@ def _make_payload(stage: Stage, **overrides) -> CritiquePayload:
 
 
 @pytest.fixture
-def builder() -> PromptBuilderService:
-    return PromptBuilderService(templates=TemplateLoader(PROMPTS_DIR))
+def builder() -> PromptBuilder:
+    return PromptBuilder(templates=TemplateLoader(PROMPTS_DIR))
 
 
 @pytest.mark.parametrize("stage", list(STAGE_RUBRICS))
 def test_build_includes_stage_prompt_and_shared_sections(
-    builder: PromptBuilderService,
+    builder: PromptBuilder,
     stage: Stage,
 ) -> None:
     stage_template = (PROMPTS_DIR / "stages" / f"{stage.value.lower()}.md").read_text(
@@ -197,7 +197,7 @@ def test_build_includes_stage_prompt_and_shared_sections(
 
 @pytest.mark.parametrize("stage", list(STAGE_RUBRICS))
 def test_build_stage_prompt_is_not_mixed_with_other_stages(
-    builder: PromptBuilderService,
+    builder: PromptBuilder,
     stage: Stage,
 ) -> None:
     user_prompt = builder.build(_make_payload(stage))[1].content
@@ -209,7 +209,7 @@ def test_build_stage_prompt_is_not_mixed_with_other_stages(
             assert marker not in user_prompt
 
 
-def test_build_omits_auto_signals_section_when_empty(builder: PromptBuilderService) -> None:
+def test_build_omits_auto_signals_section_when_empty(builder: PromptBuilder) -> None:
     payload = _make_payload(Stage.CLARIFY, auto_signals={})
 
     user_prompt = builder.build(payload)[1].content
@@ -217,14 +217,14 @@ def test_build_omits_auto_signals_section_when_empty(builder: PromptBuilderServi
     assert "Auto signals (evidence only, not automatic scores):" not in user_prompt
 
 
-def test_build_rejects_unsupported_done_stage(builder: PromptBuilderService) -> None:
+def test_build_rejects_unsupported_done_stage(builder: PromptBuilder) -> None:
     payload = _make_payload(Stage.CLARIFY).model_copy(update={"stage": Stage.DONE})
 
     with pytest.raises(ValueError, match="Stage DONE is not supported"):
         builder.build(payload)
 
 
-def test_build_rejects_empty_rubric(builder: PromptBuilderService) -> None:
+def test_build_rejects_empty_rubric(builder: PromptBuilder) -> None:
     payload = _make_payload(Stage.CLARIFY, rubric=[])
 
     with pytest.raises(ValueError, match="Rubric criteria are required"):
@@ -234,7 +234,7 @@ def test_build_rejects_empty_rubric(builder: PromptBuilderService) -> None:
 def test_build_rejects_missing_stage_template(tmp_path: Path) -> None:
     templates = TemplateLoader(tmp_path)
     (tmp_path / "system.md").write_text("system prompt", encoding="utf-8")
-    builder = PromptBuilderService(templates=templates)
+    builder = PromptBuilder(templates=templates)
     payload = _make_payload(Stage.CLARIFY)
 
     with pytest.raises(ValueError, match="Missing prompt template for stage: CLARIFY"):

@@ -4,7 +4,7 @@ import pytest
 
 from src.schemas.config import ModelConfig
 from src.schemas.critique import Difficulty, Stage
-from src.services.model_route_service import ModelRouteService
+from src.services.model_route_service import ModelRouter
 
 
 def _model(
@@ -71,8 +71,8 @@ def stage_models(monkeypatch: pytest.MonkeyPatch) -> dict[Stage, ModelConfig]:
 
 
 @pytest.fixture
-def router(stage_models: dict[Stage, ModelConfig]) -> ModelRouteService:
-    return ModelRouteService()
+def router(stage_models: dict[Stage, ModelConfig]) -> ModelRouter:
+    return ModelRouter()
 
 
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def router(stage_models: dict[Stage, ModelConfig]) -> ModelRouteService:
     ],
 )
 def test_get_model_config_returns_default_for_stage(
-    router: ModelRouteService,
+    router: ModelRouter,
     stage: Stage,
     expected_model: str,
 ) -> None:
@@ -97,7 +97,7 @@ def test_get_model_config_returns_default_for_stage(
 
 
 def test_get_model_config_without_difficulty_ignores_alternatives(
-    router: ModelRouteService,
+    router: ModelRouter,
 ) -> None:
     config = router.get_model_config(Stage.OPTIMIZE)
 
@@ -114,7 +114,7 @@ def test_get_model_config_without_difficulty_ignores_alternatives(
     ],
 )
 def test_get_model_config_selects_optimize_alternative_by_difficulty(
-    router: ModelRouteService,
+    router: ModelRouter,
     difficulty: Difficulty,
     expected_model: str,
 ) -> None:
@@ -124,7 +124,7 @@ def test_get_model_config_selects_optimize_alternative_by_difficulty(
 
 
 def test_get_model_config_falls_back_when_stage_has_no_alternative(
-    router: ModelRouteService,
+    router: ModelRouter,
 ) -> None:
     config = router.get_model_config(Stage.CLARIFY, Difficulty.HARD)
 
@@ -132,14 +132,14 @@ def test_get_model_config_falls_back_when_stage_has_no_alternative(
 
 
 def test_get_model_config_rejects_unconfigured_stage(
-    router: ModelRouteService,
+    router: ModelRouter,
 ) -> None:
     with pytest.raises(ValueError, match="No model configured for stage"):
         router.get_model_config(Stage.DONE)
 
 
 def test_get_model_config_hard_optimize_includes_reasoning_effort(
-    router: ModelRouteService,
+    router: ModelRouter,
 ) -> None:
     config = router.get_model_config(Stage.OPTIMIZE, Difficulty.HARD)
 
@@ -174,7 +174,7 @@ def test_get_model_config_resolves_api_key_lazily(
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("MOONSHOT_API_KEY", raising=False)
 
-    router = ModelRouteService()
+    router = ModelRouter()
 
     with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
         router.get_model_config(Stage.CLARIFY)
