@@ -32,7 +32,8 @@ final class CoachCritiqueRequest
      *         title: string,
      *         description: string,
      *         tags: list<string>|array<int, string>,
-     *         problem_constraints: list<string>|array<int, string>,
+     *         constraints: list<string>|array<int, string>,
+     *         difficulty: string,
      *         signature: array{function_name: string, params: mixed, returns: mixed}|null
      *     },
      *     submission: array<string, mixed>,

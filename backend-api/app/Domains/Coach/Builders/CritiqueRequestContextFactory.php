@@ -46,7 +46,8 @@ final class CritiqueRequestContextFactory
             title: $problem->title,
             description: $problem->description_md,
             tags: $problem->tags ?? [],
-            problemConstraints: $problem->constraints ?? [],
+            constraints: $problem->constraints ?? [],
+            difficulty: $problem->difficulty,
             signature: $signature !== null ? new ProblemSignatureContext(
                 functionName: $signature->function_name,
                 params: $signature->params,

@@ -1,6 +1,10 @@
 from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
+class Difficulty(str, Enum):
+    EASY = "Easy"
+    MEDIUM = "Medium"
+    HARD = "Hard"
 
 class Stage(str, Enum):
     CLARIFY = "CLARIFY"
@@ -20,7 +24,8 @@ class ProblemContext(BaseModel):
     description: str = Field(..., description="The description of the problem")
     tags: list[str] = Field(..., description="The tags of the problem")
     constraints: list[str] = Field(..., description="The constraints of the problem")
-    signature: dict[str, any] = Field(..., description="The signature of the problem")
+    difficulty: Difficulty = Field(..., description="The difficulty of the problem")
+    signature: ProblemSignature | None = Field(None, description="The signature of the problem")
 
 class Submission(BaseModel):
     inputs_outputs: str = Field(..., description="The inputs and outputs of the submission")
@@ -45,10 +50,18 @@ class CritiquePayload(BaseModel):
     auto_signals: dict[str, str | list[str]] = Field(..., description="The auto signals")
     coach_constraints: CoachConstraints = Field(..., description="The coach constraints")
 
+class ScoreDetail(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    score: int = Field(..., description="The score for this rubric key")
+    max_score: int | None = Field(None, description="The max score for this rubric key")
+    reason: str | None = Field(None, description="Short reason for the score")
+
+
 class CritiqueResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    coach_msg: str = Field(..., description="The coach message")
-    scores: dict[str, int] = Field(..., description="The coach scores")
-    flags: dict[str, bool] = Field(..., description="The coach flags")
-    questions: list[str] = Field(..., description="The coach questions")
+    scores: dict[str, ScoreDetail] = Field(..., description="Per-rubric score details")
+    coach_msg: str | None = Field(None, description="The coach message")
+    flags: dict[str, bool] = Field(..., description="Coach signal flags")
+    questions: list[str] = Field(..., description="Socratic follow-up questions")
