@@ -62,6 +62,6 @@ class CritiqueResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     scores: dict[str, ScoreDetail] = Field(..., description="Per-rubric score details")
-    coach_msg: str | None = Field(None, description="The coach message")
+    coach_msg: str = Field(..., description="The coach message")
     flags: dict[str, bool] = Field(..., description="Coach signal flags")
     questions: list[str] = Field(..., description="Socratic follow-up questions")
