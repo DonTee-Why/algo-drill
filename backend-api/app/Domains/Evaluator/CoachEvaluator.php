@@ -45,11 +45,23 @@ class CoachEvaluator implements RubricEvaluator
             }
 
             $data = \is_array($response['data'] ?? null) ? $response['data'] : [];
+            $flags = \is_array($data['flags'] ?? null) ? $data['flags'] : [];
+
+            if ($this->isUnusableCritique($flags)) {
+                Log::warning('Coach critique returned an unusable fallback', [
+                    'session_id' => $session->id,
+                    'stage' => $stage->value,
+                    'fallback_used' => (bool) ($flags['fallback_used'] ?? false),
+                    'invalid_json' => (bool) ($flags['invalid_json'] ?? false),
+                ]);
+
+                return $this->unavailableResult();
+            }
 
             return new CoachCritiqueResult(
                 scores: $this->mapScores($data['scores'] ?? []),
                 coachMsg: $data['coach_msg'] ?? null,
-                flags: \is_array($data['flags'] ?? null) ? $data['flags'] : [],
+                flags: $flags,
                 questions: \is_array($data['questions'] ?? null) ? array_values($data['questions']) : [],
                 available: true,
             );
@@ -73,6 +85,15 @@ class CoachEvaluator implements RubricEvaluator
             questions: [],
             available: false,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $flags
+     */
+    private function isUnusableCritique(array $flags): bool
+    {
+        return (bool) ($flags['fallback_used'] ?? false)
+            || (bool) ($flags['invalid_json'] ?? false);
     }
 
     /**
