@@ -6,14 +6,18 @@ import pytest
 
 from src.core.templates import TemplateLoader
 from src.schemas.critique import (
+    ApproachSubmission,
+    BruteForceSubmission,
+    ClarifySubmission,
     CoachConstraints,
     CritiquePayload,
     Difficulty,
+    OptimizeSubmission,
     ProblemContext,
+    PseudocodeSubmission,
     Stage,
-    Submission,
 )
-from src.services.prompt_builder_service import PromptBuilder
+from src.services.prompt_builder import PromptBuilder
 
 PROMPTS_DIR = Path(__file__).resolve().parents[1] / "src" / "prompts"
 
@@ -118,6 +122,33 @@ STAGE_MARKERS: dict[Stage, str] = {
     Stage.OPTIMIZE: "# OPTIMIZE Stage Prompt",
 }
 
+STAGE_SUBMISSIONS = {
+    Stage.CLARIFY: ClarifySubmission(
+        inputs_outputs="nums: int[], target: int -> int[]",
+        constraints=["nums length at least 2"],
+        examples="[2,7,11,15], 9 -> [0,1]",
+    ),
+    Stage.APPROACH: ApproachSubmission(
+        strategy="Scan once and store seen values in a hash map.",
+        justification="The complement is recoverable from values already seen.",
+        complexity="Time O(n), space O(n).",
+    ),
+    Stage.PSEUDOCODE: PseudocodeSubmission(
+        steps_text="Walk the array, store seen values, return when the complement exists.",
+    ),
+    Stage.BRUTE_FORCE: BruteForceSubmission(
+        code="def twoSum(nums, target):\n    for i in range(len(nums)):\n        for j in range(i + 1, len(nums)):\n            if nums[i] + nums[j] == target:\n                return [i, j]",
+        lang="python",
+    ),
+    Stage.OPTIMIZE: OptimizeSubmission(
+        code="def twoSum(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        if target - n in seen:\n            return [seen[target - n], i]\n        seen[n] = i",
+        lang="python",
+        complexity_analysis="Time O(n), space O(n).",
+        optimization_technique="Hash map lookup",
+        tradeoffs="Uses extra memory to avoid a nested scan.",
+    ),
+}
+
 
 def _make_payload(stage: Stage, **overrides) -> CritiquePayload:
     data = {
@@ -136,11 +167,7 @@ def _make_payload(stage: Stage, **overrides) -> CritiquePayload:
                 "returns": {"type": "int[]"},
             },
         ),
-        "submission": Submission(
-            inputs_outputs="nums: int[], target: int -> int[]",
-            constraints=["nums length at least 2"],
-            examples="[2,7,11,15], 9 -> [0,1]",
-        ),
+        "submission": STAGE_SUBMISSIONS[stage],
         "auto_signals": {"missing_fields": []},
         "coach_constraints": CoachConstraints(
             no_code=True,
