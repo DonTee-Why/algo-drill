@@ -8,6 +8,7 @@ from src.services.rubric_parser import (
     COACH_MSG_MAX_LEN,
     DEFAULT_COACH_MSG,
     FALLBACK_COACH_MSG,
+    SANITIZER_FLAGS,
     RubricParser,
 )
 
@@ -163,6 +164,24 @@ def test_normalize_flags_defaults_and_booleans(parser: RubricParser) -> None:
     assert result.flags["invalid_json"] is False
     assert result.flags["fallback_used"] is False
     assert result.flags["missing_scores"] is False
+    for key in SANITIZER_FLAGS:
+        assert result.flags[key] is False
+
+
+def test_parser_resets_llm_sanitizer_flags(parser: RubricParser) -> None:
+    raw = _raw_response(
+        flags={
+            "code_leak_blocked": True,
+            "fenced_code_detected": True,
+            "inline_code_removed": True,
+            "syntactic_code_detected": True,
+            "code_span_removed": True,
+        }
+    )
+    result = parser.parse(json.dumps(raw), CLARIFY_RUBRIC)
+
+    for key in SANITIZER_FLAGS:
+        assert result.flags[key] is False
 
 
 def test_normalize_questions_truncates(parser: RubricParser) -> None:

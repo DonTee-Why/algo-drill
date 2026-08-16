@@ -8,6 +8,13 @@ from src.schemas.critique import CritiqueResponse, ScoreDetail
 
 REQUIRED_TOP_LEVEL_KEYS = ("coach_msg", "scores", "flags", "questions")
 REQUIRED_FLAGS = ("too_vague", "code_leak_blocked", "prompt_injection_detected")
+SANITIZER_FLAGS = (
+    "code_leak_blocked",
+    "fenced_code_detected",
+    "inline_code_removed",
+    "syntactic_code_detected",
+    "code_span_removed",
+)
 META_FLAGS = ("invalid_json", "fallback_used", "missing_scores")
 FALLBACK_COACH_MSG = (
     "I could not reliably evaluate this response. Recheck the current "
@@ -208,8 +215,9 @@ class RubricParser:
         for key in REQUIRED_FLAGS:
             flags.setdefault(key, False)
 
-        # Sanitizer owns this flag; LLM must not claim a block.
-        flags["code_leak_blocked"] = False
+        # Sanitizer owns leak flags; LLM must not claim a block.
+        for key in SANITIZER_FLAGS:
+            flags[key] = False
 
         flags["invalid_json"] = invalid_json
         flags["fallback_used"] = fallback_used
