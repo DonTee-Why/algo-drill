@@ -22,23 +22,45 @@ class CoachingSessionTest extends TestCase
         config(['services.coach.url' => 'http://coach.test']);
 
         Http::fake([
-            'http://coach.test/coach/critique' => Http::response([
-                'coach_msg' => 'Good clarification.',
-                'scores' => [
-                    'inputs_outputs' => ['score' => 3, 'max_score' => 3, 'reason' => 'Clear'],
-                    'constraints' => ['score' => 3, 'max_score' => 3, 'reason' => 'Clear'],
-                    'examples' => ['score' => 6, 'max_score' => 6, 'reason' => 'Includes edge case'],
-                ],
-                'flags' => [
-                    'too_vague' => false,
-                    'output_contract_confused' => false,
-                    'values_vs_indices_confusion' => false,
-                    'missing_edge_case' => false,
-                    'code_leak_blocked' => false,
-                    'prompt_injection_detected' => false,
-                ],
-                'questions' => [],
-            ]),
+            'http://coach.test/coach/critique' => function ($request) {
+                $stage = $request['stage'] ?? null;
+
+                if ($stage === Stage::Approach->value) {
+                    return Http::response([
+                        'coach_msg' => 'Solid high-level plan.',
+                        'scores' => [
+                            'strategy' => ['score' => 2, 'max_score' => 2, 'reason' => 'Clear'],
+                            'justification' => ['score' => 2, 'max_score' => 2, 'reason' => 'Clear'],
+                            'complexity' => ['score' => 2, 'max_score' => 2, 'reason' => 'Clear'],
+                        ],
+                        'flags' => [
+                            'too_vague' => false,
+                            'missing_complexity' => false,
+                            'code_leak_blocked' => false,
+                            'prompt_injection_detected' => false,
+                        ],
+                        'questions' => [],
+                    ]);
+                }
+
+                return Http::response([
+                    'coach_msg' => 'Good clarification.',
+                    'scores' => [
+                        'inputs_outputs' => ['score' => 3, 'max_score' => 3, 'reason' => 'Clear'],
+                        'constraints' => ['score' => 3, 'max_score' => 3, 'reason' => 'Clear'],
+                        'examples' => ['score' => 6, 'max_score' => 6, 'reason' => 'Includes edge case'],
+                    ],
+                    'flags' => [
+                        'too_vague' => false,
+                        'output_contract_confused' => false,
+                        'values_vs_indices_confusion' => false,
+                        'missing_edge_case' => false,
+                        'code_leak_blocked' => false,
+                        'prompt_injection_detected' => false,
+                    ],
+                    'questions' => [],
+                ]);
+            },
         ]);
     }
 
@@ -171,7 +193,11 @@ class CoachingSessionTest extends TestCase
         $this->actingAs($user)
             ->post(route('sessions.submit', $session->id), [
                 'stage' => Stage::Approach->value,
-                'payload' => ['text' => 'Test approach'],
+                'payload' => [
+                    'strategy' => 'Scan once and store seen values in a hash map.',
+                    'justification' => 'The complement is recoverable from values already seen.',
+                    'complexity' => 'Time O(n), space O(n).',
+                ],
             ]);
         $session->refresh();
         $this->assertEquals(Stage::Pseudocode->value, $session->state->value);

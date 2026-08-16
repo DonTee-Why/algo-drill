@@ -11,6 +11,9 @@ interface UseSessionFormOptions {
     inputsOutputs: string;
     constraints: string;
     examples: string;
+    strategy: string;
+    justification: string;
+    complexity: string;
     isCodeStage: boolean;
     isTextStage: boolean;
     isHybridStage: boolean;
@@ -41,6 +44,9 @@ export function useSessionForm({
     inputsOutputs,
     constraints,
     examples,
+    strategy,
+    justification,
+    complexity,
     isCodeStage,
     isTextStage,
     isHybridStage,
@@ -62,6 +68,9 @@ export function useSessionForm({
             inputs_outputs: inputsOutputs,
             constraints: constraints,
             examples: examples,
+            strategy: strategy,
+            justification: justification,
+            complexity: complexity,
             complexityAnalysis: initialComplexityAnalysis || '',
             optimizationTechnique: initialOptimizationTechnique || '',
             tradeoffs: initialTradeoffs || '',
@@ -81,8 +90,11 @@ export function useSessionForm({
         setData('payload.inputs_outputs', inputsOutputs);
         setData('payload.constraints', constraints);
         setData('payload.examples', examples);
+        setData('payload.strategy', strategy);
+        setData('payload.justification', justification);
+        setData('payload.complexity', complexity);
         setData('stage', session.state);
-    }, [code, selectedLang, textInput, inputsOutputs, constraints, examples, session.state, setData]);
+    }, [code, selectedLang, textInput, inputsOutputs, constraints, examples, strategy, justification, complexity, session.state, setData]);
 
     const buildPayload = useCallback((): Record<string, any> => {
         const payload: Record<string, any> = {};
@@ -92,6 +104,10 @@ export function useSessionForm({
                 payload.inputs_outputs = inputsOutputs;
                 payload.constraints = constraints;
                 payload.examples = examples;
+            } else if (session.state === 'APPROACH') {
+                payload.strategy = strategy;
+                payload.justification = justification;
+                payload.complexity = complexity;
             } else {
                 payload.text = textInput;
             }
@@ -115,7 +131,7 @@ export function useSessionForm({
         }
 
         return payload;
-    }, [code, constraints, data.payload.complexityAnalysis, data.payload.optimizationTechnique, data.payload.tradeoffs, examples, inputsOutputs, isCodeStage, isHybridStage, isTextStage, selectedLang, session.state, textInput]);
+    }, [code, constraints, complexity, data.payload.complexityAnalysis, data.payload.optimizationTechnique, data.payload.tradeoffs, examples, inputsOutputs, isCodeStage, isHybridStage, isTextStage, justification, selectedLang, session.state, strategy, textInput]);
 
     const handleRunTests = useCallback(async () => {
         if (!isCodeStage || !code.trim()) {

@@ -35,16 +35,20 @@ class SubmitCoachingSessionRequest extends FormRequest
             $rules['payload.inputs_outputs'] = ['required', 'string', 'min:1'];
             $rules['payload.constraints'] = ['required', 'string', 'min:1'];
             $rules['payload.examples'] = ['required', 'string', 'min:1'];
+        } elseif ($stage === Stage::Approach->value) {
+            $rules['payload.strategy'] = ['required', 'string', 'min:1'];
+            $rules['payload.justification'] = ['required', 'string', 'min:1'];
+            $rules['payload.complexity'] = ['required', 'string', 'min:1'];
         } else {
             $rules['payload.text'] = ['sometimes', 'string'];
         }
 
         // Common fields
-        $rules['payload.code'] = ['sometimes', 'string', 'required_if:stage,' . Stage::BruteForce->value . ',' . Stage::Optimize->value];
-        $rules['payload.lang'] = ['sometimes', Rule::enum(Lang::class), 'required_if:stage,' . Stage::BruteForce->value . ',' . Stage::Optimize->value];
-        $rules['payload.complexityAnalysis'] = ['sometimes', 'string', 'required_if:stage,' . Stage::Optimize->value];
-        $rules['payload.optimizationTechnique'] = ['sometimes', 'string', 'required_if:stage,' . Stage::Optimize->value];
-        $rules['payload.tradeoffs'] = ['sometimes', 'string', 'required_if:stage,' . Stage::Optimize->value];
+        $rules['payload.code'] = ['sometimes', 'string', 'required_if:stage,'.Stage::BruteForce->value.','.Stage::Optimize->value];
+        $rules['payload.lang'] = ['sometimes', Rule::enum(Lang::class), 'required_if:stage,'.Stage::BruteForce->value.','.Stage::Optimize->value];
+        $rules['payload.complexityAnalysis'] = ['sometimes', 'string', 'required_if:stage,'.Stage::Optimize->value];
+        $rules['payload.optimizationTechnique'] = ['sometimes', 'string', 'required_if:stage,'.Stage::Optimize->value];
+        $rules['payload.tradeoffs'] = ['sometimes', 'string', 'required_if:stage,'.Stage::Optimize->value];
 
         return $rules;
     }

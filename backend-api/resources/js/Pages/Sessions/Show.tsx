@@ -8,6 +8,7 @@ import SessionHeader from '../../Components/Sessions/SessionHeader';
 import CodeStageEditor from '../../Components/Sessions/CodeStageEditor';
 import TextStageForm from '../../Components/Sessions/TextStageForm';
 import ClarifyStageForm from '../../Components/Sessions/ClarifyStageForm';
+import ApproachStageForm from '../../Components/Sessions/ApproachStageForm';
 import OptimizeFields from '../../Components/Sessions/OptimizeFields';
 import StageProgress from '../../Components/Sessions/StageProgress';
 import TestResultsCard from '../../Components/Sessions/TestResultsCard';
@@ -17,6 +18,18 @@ import { STAGE_LABELS, STAGE_MAX_SCORES } from '../../Components/Sessions/consta
 import { useDraftManagement } from '../../Components/Sessions/hooks/useDraftManagement';
 import { useSessionForm } from '../../Components/Sessions/hooks/useSessionForm';
 import type { ShowProps } from '../../Components/Sessions/types';
+
+function approachFieldsFromPayload(payload?: Record<string, any> | null): {
+    strategy: string;
+    justification: string;
+    complexity: string;
+} {
+    return {
+        strategy: payload?.strategy || payload?.text || '',
+        justification: payload?.justification || '',
+        complexity: payload?.complexity || '',
+    };
+}
 
 export default function Show({
     auth,
@@ -43,6 +56,10 @@ export default function Show({
     const [inputsOutputs, setInputsOutputs] = useState<string>(displayedAttempt?.payload?.inputs_outputs || '');
     const [constraints, setConstraints] = useState<string>(displayedAttempt?.payload?.constraints || '');
     const [examples, setExamples] = useState<string>(displayedAttempt?.payload?.examples || '');
+    const initialApproach = approachFieldsFromPayload(displayedAttempt?.payload);
+    const [strategy, setStrategy] = useState<string>(initialApproach.strategy);
+    const [justification, setJustification] = useState<string>(initialApproach.justification);
+    const [complexity, setComplexity] = useState<string>(initialApproach.complexity);
 
     const currentStage = session.state;
     const activeStage = viewingStage || currentStage;
@@ -100,6 +117,9 @@ export default function Show({
         inputsOutputs,
         constraints,
         examples,
+        strategy,
+        justification,
+        complexity,
         isCodeStage,
         isTextStage,
         isHybridStage,
@@ -113,6 +133,10 @@ export default function Show({
                     setInputsOutputs('');
                     setConstraints('');
                     setExamples('');
+                } else if (currentStage === 'APPROACH') {
+                    setStrategy('');
+                    setJustification('');
+                    setComplexity('');
                 } else {
                     setTextInput('');
                 }
@@ -138,6 +162,11 @@ export default function Show({
                     setInputsOutputs(attempt.payload?.inputs_outputs || '');
                     setConstraints(attempt.payload?.constraints || '');
                     setExamples(attempt.payload?.examples || '');
+                } else if (activeStage === 'APPROACH') {
+                    const fields = approachFieldsFromPayload(attempt.payload);
+                    setStrategy(fields.strategy);
+                    setJustification(fields.justification);
+                    setComplexity(fields.complexity);
                 } else {
                     setTextInput(attempt.payload?.text || attempt.payload?.user_input || '');
                 }
@@ -157,6 +186,10 @@ export default function Show({
                     setInputsOutputs('');
                     setConstraints('');
                     setExamples('');
+                } else if (activeStage === 'APPROACH') {
+                    setStrategy('');
+                    setJustification('');
+                    setComplexity('');
                 } else {
                     setTextInput('');
                 }
@@ -176,6 +209,10 @@ export default function Show({
                     setInputsOutputs('');
                     setConstraints('');
                     setExamples('');
+                } else if (currentStage === 'APPROACH') {
+                    setStrategy('');
+                    setJustification('');
+                    setComplexity('');
                 } else {
                     setTextInput('');
                 }
@@ -198,8 +235,11 @@ export default function Show({
         setData('payload.inputs_outputs', inputsOutputs);
         setData('payload.constraints', constraints);
         setData('payload.examples', examples);
+        setData('payload.strategy', strategy);
+        setData('payload.justification', justification);
+        setData('payload.complexity', complexity);
         setData('stage', session.state);
-    }, [code, constraints, examples, inputsOutputs, selectedLang, session.state, setData, textInput]);
+    }, [code, complexity, constraints, examples, inputsOutputs, justification, selectedLang, session.state, setData, strategy, textInput]);
 
     const onRunTests = async () => {
         saveDraftCheckpoint();
@@ -282,6 +322,9 @@ export default function Show({
                                     {errors['payload.inputs_outputs'] && <div>Inputs & Outputs: {errors['payload.inputs_outputs']}</div>}
                                     {errors['payload.constraints'] && <div>Constraints: {errors['payload.constraints']}</div>}
                                     {errors['payload.examples'] && <div>Examples: {errors['payload.examples']}</div>}
+                                    {errors['payload.strategy'] && <div>Strategy: {errors['payload.strategy']}</div>}
+                                    {errors['payload.justification'] && <div>Why it works: {errors['payload.justification']}</div>}
+                                    {errors['payload.complexity'] && <div>Complexity: {errors['payload.complexity']}</div>}
                                     {errors['payload.complexityAnalysis'] && <div>Complexity Analysis: {errors['payload.complexityAnalysis']}</div>}
                                     {errors['payload.optimizationTechnique'] && <div>Optimization Technique: {errors['payload.optimizationTechnique']}</div>}
                                     {errors['payload.tradeoffs'] && <div>Tradeoffs: {errors['payload.tradeoffs']}</div>}
@@ -327,6 +370,19 @@ export default function Show({
                                         setInputsOutputs={setInputsOutputs}
                                         setConstraints={setConstraints}
                                         setExamples={setExamples}
+                                        readOnly={isViewingPastStage}
+                                        onSubmit={handleSubmit}
+                                        processing={processing}
+                                        stageLabel={STAGE_LABELS[currentStage] || currentStage}
+                                    />
+                                ) : activeStage === 'APPROACH' ? (
+                                    <ApproachStageForm
+                                        strategy={strategy}
+                                        justification={justification}
+                                        complexity={complexity}
+                                        setStrategy={setStrategy}
+                                        setJustification={setJustification}
+                                        setComplexity={setComplexity}
                                         readOnly={isViewingPastStage}
                                         onSubmit={handleSubmit}
                                         processing={processing}

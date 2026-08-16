@@ -83,4 +83,33 @@ class CoachCritiqueRequestBuilderTest extends TestCase
         $this->assertTrue($array['auto_signals']['has_marked_edge_case']);
         $this->assertTrue($array['coach_constraints']['no_code']);
     }
+
+    public function test_builds_approach_payload_with_structured_fields(): void
+    {
+        $user = User::factory()->create();
+        $problem = Problem::factory()->create([
+            'title' => 'Two Sum',
+            'tags' => ['array', 'hash-table'],
+            'constraints' => ['Each input has exactly one solution.'],
+            'description_md' => 'Given an array of integers...',
+        ]);
+        $session = CoachingSession::factory()->for($user)->for($problem)->create([
+            'selected_lang' => 'javascript',
+        ]);
+
+        $payload = [
+            'strategy' => 'Scan once and store seen values.',
+            'justification' => 'The complement is recoverable from values already seen.',
+            'complexity' => 'Time O(n), space O(n).',
+        ];
+
+        $request = $this->builder->build($session, Stage::Approach, $payload);
+        $array = $request->toArray();
+
+        $this->assertSame('APPROACH', $array['stage']);
+        $this->assertSame($payload['strategy'], $array['submission']['strategy']);
+        $this->assertSame($payload['justification'], $array['submission']['justification']);
+        $this->assertSame($payload['complexity'], $array['submission']['complexity']);
+        $this->assertArrayNotHasKey('text', $array['submission']);
+    }
 }
