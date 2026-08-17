@@ -139,6 +139,37 @@ class CoachCritiqueRequestBuilderTest extends TestCase
         $this->assertSame($payload['text'], $array['submission']['steps_text']);
     }
 
+    public function test_builds_brute_force_payload_with_runner_auto_signals(): void
+    {
+        $session = $this->makeSession();
+        $payload = [
+            'code' => 'function twoSum(nums, target) { return []; }',
+            'lang' => 'javascript',
+            'runner' => [
+                'compiled' => true,
+                'signature_ok' => true,
+                'tests' => [
+                    'summary' => [
+                        'passed' => 3,
+                        'failed' => 0,
+                        'total' => 3,
+                    ],
+                ],
+            ],
+        ];
+
+        $array = $this->builder->build($session, Stage::BruteForce, $payload)->toArray();
+
+        $this->assertSame('BRUTE_FORCE', $array['stage']);
+        $this->assertSame($payload['code'], $array['submission']['code']);
+        $this->assertSame($payload['lang'], $array['submission']['lang']);
+        $this->assertTrue($array['auto_signals']['compiled']);
+        $this->assertTrue($array['auto_signals']['signature_ok']);
+        $this->assertSame(3, $array['auto_signals']['tests_passed']);
+        $this->assertSame(0, $array['auto_signals']['tests_failed']);
+        $this->assertSame(3, $array['auto_signals']['tests_total']);
+    }
+
     private function makeSession(): CoachingSession
     {
         $user = User::factory()->create();

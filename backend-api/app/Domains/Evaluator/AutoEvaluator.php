@@ -56,9 +56,8 @@ final class AutoEvaluator implements RubricEvaluator
 
         $compilesScore = ($runner['compiled'] ?? false) ? 3 : 0;
         $signatureScore = ($runner['signature_ok'] ?? false) ? 3 : 0;
-        $correctnessScore = ($runner['tests']['summary']['failed'] ?? 1) === 0 ? 3 : 0;
 
-        $scores = [
+        return [
             'compiles' => [
                 'score' => $compilesScore,
                 'by' => 'auto',
@@ -67,18 +66,7 @@ final class AutoEvaluator implements RubricEvaluator
                 'score' => $signatureScore,
                 'by' => 'auto',
             ],
-            'correctness' => [
-                'score' => $correctnessScore,
-                'by' => 'auto',
-            ],
         ];
-
-        $scores['total'] = array_sum(array_column(
-            $scores,
-            'score'
-        ));
-
-        return $scores;
     }
 
     private function optimize(array $payload): array

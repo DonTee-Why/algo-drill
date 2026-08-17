@@ -31,8 +31,31 @@ final class BruteForceCritiqueRequestBuilder implements StageCritiqueRequestBuil
                 'code' => (string) ($payload['code'] ?? ''),
                 'lang' => (string) ($payload['lang'] ?? $session->selected_lang ?? ''),
             ],
-            autoSignals: [],
+            autoSignals: $this->autoSignals($payload),
             coachConstraints: $this->contextFactory->defaultCoachConstraints(),
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function autoSignals(array $payload): array
+    {
+        $runner = is_array($payload['runner'] ?? null) ? $payload['runner'] : [];
+
+        if ($runner === []) {
+            return [];
+        }
+
+        $summary = is_array($runner['tests']['summary'] ?? null) ? $runner['tests']['summary'] : [];
+
+        return [
+            'compiled' => (bool) ($runner['compiled'] ?? false),
+            'signature_ok' => (bool) ($runner['signature_ok'] ?? false),
+            'tests_passed' => (int) ($summary['passed'] ?? 0),
+            'tests_failed' => (int) ($summary['failed'] ?? 0),
+            'tests_total' => (int) ($summary['total'] ?? 0),
+        ];
     }
 }
