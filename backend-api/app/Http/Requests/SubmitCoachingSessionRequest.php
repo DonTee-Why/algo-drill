@@ -39,6 +39,8 @@ class SubmitCoachingSessionRequest extends FormRequest
             $rules['payload.strategy'] = ['required', 'string', 'min:1'];
             $rules['payload.justification'] = ['required', 'string', 'min:1'];
             $rules['payload.complexity'] = ['required', 'string', 'min:1'];
+        } elseif ($stage === Stage::Pseudocode->value) {
+            $rules['payload.steps_text'] = ['required', 'string', 'min:1'];
         } else {
             $rules['payload.text'] = ['sometimes', 'string'];
         }

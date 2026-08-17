@@ -28,7 +28,7 @@ final class PseudocodeCritiqueRequestBuilder implements StageCritiqueRequestBuil
             rubric: PseudocodeRubric::items(),
             problemContext: $this->contextFactory->buildProblemContext($session),
             submission: [
-                'steps_text' => (string) ($payload['steps_text'] ?? $payload['stepsText'] ?? ''),
+                'steps_text' => (string) ($payload['steps_text'] ?? $payload['stepsText'] ?? $payload['text'] ?? ''),
             ],
             autoSignals: [],
             coachConstraints: $this->contextFactory->defaultCoachConstraints(),

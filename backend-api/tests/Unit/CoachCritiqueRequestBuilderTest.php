@@ -112,4 +112,45 @@ class CoachCritiqueRequestBuilderTest extends TestCase
         $this->assertSame($payload['complexity'], $array['submission']['complexity']);
         $this->assertArrayNotHasKey('text', $array['submission']);
     }
+
+    public function test_builds_pseudocode_payload_from_steps_text(): void
+    {
+        $session = $this->makeSession();
+        $payload = [
+            'steps_text' => 'Walk the array, store seen values, return when the complement exists.',
+        ];
+
+        $array = $this->builder->build($session, Stage::Pseudocode, $payload)->toArray();
+
+        $this->assertSame('PSEUDOCODE', $array['stage']);
+        $this->assertSame($payload['steps_text'], $array['submission']['steps_text']);
+        $this->assertArrayNotHasKey('text', $array['submission']);
+    }
+
+    public function test_builds_pseudocode_payload_from_text_fallback(): void
+    {
+        $session = $this->makeSession();
+        $payload = [
+            'text' => 'Initialize a map, then scan once.',
+        ];
+
+        $array = $this->builder->build($session, Stage::Pseudocode, $payload)->toArray();
+
+        $this->assertSame($payload['text'], $array['submission']['steps_text']);
+    }
+
+    private function makeSession(): CoachingSession
+    {
+        $user = User::factory()->create();
+        $problem = Problem::factory()->create([
+            'title' => 'Two Sum',
+            'tags' => ['array', 'hash-table'],
+            'constraints' => ['Each input has exactly one solution.'],
+            'description_md' => 'Given an array of integers...',
+        ]);
+
+        return CoachingSession::factory()->for($user)->for($problem)->create([
+            'selected_lang' => 'javascript',
+        ]);
+    }
 }

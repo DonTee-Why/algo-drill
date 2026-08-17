@@ -108,6 +108,8 @@ export function useSessionForm({
                 payload.strategy = strategy;
                 payload.justification = justification;
                 payload.complexity = complexity;
+            } else if (session.state === 'PSEUDOCODE') {
+                payload.steps_text = textInput;
             } else {
                 payload.text = textInput;
             }

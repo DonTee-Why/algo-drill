@@ -25,6 +25,24 @@ class CoachingSessionTest extends TestCase
             'http://coach.test/coach/critique' => function ($request) {
                 $stage = $request['stage'] ?? null;
 
+                if ($stage === Stage::Pseudocode->value) {
+                    return Http::response([
+                        'coach_msg' => 'Clear step-by-step plan.',
+                        'scores' => [
+                            'step_order' => ['score' => 3, 'max_score' => 3, 'reason' => 'Logical'],
+                            'bounds' => ['score' => 2, 'max_score' => 3, 'reason' => 'Mostly clear'],
+                            'edge_handling' => ['score' => 2, 'max_score' => 3, 'reason' => 'Covers empty input'],
+                        ],
+                        'flags' => [
+                            'too_vague' => false,
+                            'missing_edge_handling' => false,
+                            'code_leak_blocked' => false,
+                            'prompt_injection_detected' => false,
+                        ],
+                        'questions' => [],
+                    ]);
+                }
+
                 if ($stage === Stage::Approach->value) {
                     return Http::response([
                         'coach_msg' => 'Solid high-level plan.',
@@ -206,7 +224,9 @@ class CoachingSessionTest extends TestCase
         $this->actingAs($user)
             ->post(route('sessions.submit', $session->id), [
                 'stage' => Stage::Pseudocode->value,
-                'payload' => ['text' => 'Test pseudocode'],
+                'payload' => [
+                    'steps_text' => 'Walk the array, store seen values, return when the complement exists.',
+                ],
             ]);
         $session->refresh();
         $this->assertEquals(Stage::BruteForce->value, $session->state->value);

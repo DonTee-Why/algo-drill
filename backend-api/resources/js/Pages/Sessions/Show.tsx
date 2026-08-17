@@ -51,7 +51,7 @@ export default function Show({
     }, [latestAttempt, stageAttempts, viewingStage]);
 
     const [textInput, setTextInput] = useState<string>(
-        displayedAttempt?.payload?.text || displayedAttempt?.payload?.user_input || '',
+        displayedAttempt?.payload?.steps_text || displayedAttempt?.payload?.text || displayedAttempt?.payload?.user_input || '',
     );
     const [inputsOutputs, setInputsOutputs] = useState<string>(displayedAttempt?.payload?.inputs_outputs || '');
     const [constraints, setConstraints] = useState<string>(displayedAttempt?.payload?.constraints || '');
@@ -168,7 +168,7 @@ export default function Show({
                     setJustification(fields.justification);
                     setComplexity(fields.complexity);
                 } else {
-                    setTextInput(attempt.payload?.text || attempt.payload?.user_input || '');
+                    setTextInput(attempt.payload?.steps_text || attempt.payload?.text || attempt.payload?.user_input || '');
                 }
             }
             if (isCodeStage) {
@@ -319,6 +319,7 @@ export default function Show({
                                     {errors['payload.code'] && <div>Code: {errors['payload.code']}</div>}
                                     {errors['payload.lang'] && <div>Language: {errors['payload.lang']}</div>}
                                     {errors['payload.text'] && <div>Text: {errors['payload.text']}</div>}
+                                    {errors['payload.steps_text'] && <div>Pseudocode: {errors['payload.steps_text']}</div>}
                                     {errors['payload.inputs_outputs'] && <div>Inputs & Outputs: {errors['payload.inputs_outputs']}</div>}
                                     {errors['payload.constraints'] && <div>Constraints: {errors['payload.constraints']}</div>}
                                     {errors['payload.examples'] && <div>Examples: {errors['payload.examples']}</div>}
